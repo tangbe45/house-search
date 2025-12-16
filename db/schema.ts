@@ -1,5 +1,29 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  pgEnum,
+  text,
+  timestamp,
+  boolean,
+  index,
+  uuid,
+  primaryKey,
+  doublePrecision,
+  integer,
+} from "drizzle-orm/pg-core";
+
+export const houseStatusEnum = pgEnum("house_status", [
+  "AVAILABLE",
+  "PENDING",
+  "SOLD",
+  "RENTED",
+]);
+
+export const housePurposeEnum = pgEnum("house_purpose", [
+  "FOR_RENT",
+  "FOR_SALE",
+  "SHORT_STAY",
+]);
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -13,6 +37,21 @@ export const user = pgTable("user", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+export const role = pgTable("role", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+});
+
+export const userRole = pgTable(
+  "user_role",
+  {
+    userId: uuid("user_id").notNull(),
+    roleId: uuid("role_id").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.roleId] })]
+);
 
 export const session = pgTable(
   "session",
@@ -73,6 +112,104 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)]
 );
 
+export const roleInviteToken = pgTable("role_invite_token", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  token: text("token").notNull().unique(),
+  createdBy: uuid("created_by").notNull(),
+
+  targetEmail: text("target_email").notNull(),
+  role: text("role").notNull(), // landlord for now
+
+  used: boolean("used").notNull().default(false),
+  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
+
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+export const region = pgTable("region", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+});
+
+export const division = pgTable("division", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  regionId: uuid("region_id").notNull(),
+});
+
+export const subdivision = pgTable("subdivision", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  divisionId: uuid("division_id").notNull(),
+});
+
+export const neighborhood = pgTable("neighborhood", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  subdivisionId: uuid("subdivision_id").notNull(),
+});
+
+export const houseType = pgTable("house_type", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+});
+
+export const house = pgTable("house", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  title: text("title").notNull(),
+  description: text("description"),
+
+  price: doublePrecision("price").notNull(),
+  location: text("location").notNull(),
+
+  bedrooms: integer("bedrooms").notNull(),
+  bathrooms: integer("bathrooms").notNull(),
+
+  hasInternalToilet: boolean("has_internal_toilet").default(false).notNull(),
+  hasParking: boolean("has_parking").default(false).notNull(),
+  hasWell: boolean("has_well").default(false).notNull(),
+  hasFence: boolean("has_fence").default(false).notNull(),
+  hasBalcony: boolean("has_balcony").default(false).notNull(),
+
+  purpose: housePurposeEnum("purpose").default("FOR_RENT").notNull(),
+  status: houseStatusEnum("status").default("AVAILABLE").notNull(),
+
+  agentId: uuid("agent_id").notNull(),
+  houseTypeId: uuid("house_type_id").notNull(),
+
+  regionId: uuid("region_id").notNull(),
+  divisionId: uuid("division_id").notNull(),
+  subdivisionId: uuid("subdivision_id").notNull(),
+  neighborhoodId: uuid("neighborhood_id").notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+export const media = pgTable("media", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  url: text("url").notNull(),
+
+  houseId: uuid("house_id").notNull(),
+
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+// relations
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -92,4 +229,47 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
-export const schema = { user, account, session, verification };
+export const houseRelations = relations(house, ({ one, many }) => ({
+  agent: one(user, {
+    fields: [house.agentId],
+    references: [user.id],
+  }),
+  houseType: one(houseType, {
+    fields: [house.houseTypeId],
+    references: [houseType.id],
+  }),
+  region: one(region, {
+    fields: [house.regionId],
+    references: [region.id],
+  }),
+  division: one(division, {
+    fields: [house.divisionId],
+    references: [division.id],
+  }),
+  subdivision: one(subdivision, {
+    fields: [house.subdivisionId],
+    references: [subdivision.id],
+  }),
+  neighborhood: one(neighborhood, {
+    fields: [house.neighborhoodId],
+    references: [neighborhood.id],
+  }),
+  images: many(media),
+}));
+
+export const userRelation = relations(user, ({ many }) => ({
+  roles: many(userRole),
+  houses: many(house),
+}));
+
+export const schema = {
+  user,
+  account,
+  session,
+  verification,
+  houseType,
+  region,
+  division,
+  subdivision,
+  neighborhood,
+};

@@ -13,17 +13,17 @@ export default function Navbar() {
 
   const navItems = [
     { name: "Home", href: "/" },
-    { name: "Dashboard", href: "/dashboard" },
     { name: "Houses", href: "/houses" },
+    { name: "Dashboard", href: "/dashboard" },
     { name: "Contact", href: "/contact" },
   ];
 
   return (
-    <nav className="w-full py-5 flex items-center relative justify-between">
+    <nav className="w-full py-4 flex items-center relative justify-between">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-8">
           {/* Logo */}
-          <h1 className="text-xl md:text-2xl font-bold">
+          <h1 className="text-xl md:text-xl font-bold">
             <Link href="/">
               Habi<span className="text-blue-500">Move</span>
             </Link>
@@ -35,7 +35,9 @@ export default function Navbar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className="text-gray-300 hover:text-indigo-600 transition-colors"
+                className={`${buttonVariants({
+                  variant: "ghost",
+                })}  hover:text-indigo-600 transition-colors`}
               >
                 {item.name}
               </Link>

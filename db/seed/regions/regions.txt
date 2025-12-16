@@ -1,0 +1,27 @@
+//   {
+//     "name": "Adamawa"
+//   },
+//   {
+//     "name": "East"
+//   },
+//   {
+//     "name": "Far North"
+//   },
+//   {
+//     "name": "Littoral"
+//   },
+//   {
+//     "name": "North"
+//   },
+//   {
+//     "name": "North West"
+//   },
+//   {
+//     "name": "South"
+//   },
+//   {
+//     "name": "South West"
+//   },
+//   {
+//     "name": "West"
+//   }

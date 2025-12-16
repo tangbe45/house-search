@@ -1,0 +1,86 @@
+[
+  {
+    "name": "Single Room",
+    "description": "One room, often shared bathroom/kitchen, cheapest option for students or workers."
+  },
+  {
+    "name": "Self-Contained Room",
+    "description": "One room with private bathroom and sometimes small kitchen."
+  },
+  {
+    "name": "Studio",
+    "description": "Single room combining sleeping, living, and sometimes kitchenette; fully self-contained."
+  },
+  {
+    "name": "Mini Flat",
+    "description": "Small 1-bedroom apartment with living area, kitchen, and bathroom."
+  },
+  {
+    "name": "Room and Parlour",
+    "description": "1 bedroom + living room + bathroom + kitchen."
+  },
+  {
+    "name": "2-Bedroom Apartment",
+    "description": "Two bedrooms, living room, kitchen, bathroom(s); for small families."
+  },
+  {
+    "name": "3-Bedroom Apartment",
+    "description": "Three bedrooms, living room, kitchen, bathroom(s); for medium-sized families."
+  },
+  {
+    "name": "4-Bedroom Apartment",
+    "description": "Four bedrooms, living room, kitchen, multiple bathrooms; for larger families."
+  },
+  {
+    "name": "Duplex",
+    "description": "Two-level house with bedrooms upstairs, living/kitchen downstairs."
+  },
+  {
+    "name": "Triplex",
+    "description": "Three-level house, larger family or multi-tenant use."
+  },
+  {
+    "name": "Bungalow",
+    "description": "Single-story detached house, usually with a yard."
+  },
+  {
+    "name": "Villa",
+    "description": "Spacious, luxurious standalone house with compound, garden, sometimes swimming pool."
+  },
+  {
+    "name": "Penthouse",
+    "description": "Luxury top-floor apartment in a multi-storey building, with terrace or panoramic views."
+  },
+  {
+    "name": "Furnished Apartment",
+    "description": "Fully equipped with furniture and appliances; for professionals or short-term rentals."
+  },
+  {
+    "name": "Guest House",
+    "description": "Multiple rooms for visitors or tourists, may include services like breakfast or cleaning."
+  },
+  {
+    "name": "Serviced Apartment",
+    "description": "Apartment rented fully furnished with services such as cleaning, security, utilities included."
+  },
+  {
+    "name": "Mud House",
+    "description": "Simple construction using local materials, more common in peri-urban or rural areas."
+  },
+  {
+    "name": "Earth Block House",
+    "description": "Modern adaptation of traditional mud house using stabilized earth blocks."
+  },
+  {
+    "name": "Thatched Hut",
+    "description": "Traditional round huts with thatch roofing, mostly in northern and rural areas."
+  },
+  {
+    "name": "Bamboo House",
+    "description": "Constructed using bamboo, often in suburban/peri-urban areas."
+  },
+  {
+    "name": "Office Space",
+    "description": "Commercial rental space for businesses, startups, or small companies; may include private washrooms, parking, and reception areas."
+  }
+]
