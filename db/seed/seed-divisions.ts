@@ -3,13 +3,17 @@ import path from "path";
 import "dotenv/config";
 import { db } from ".";
 import { and, eq } from "drizzle-orm";
-import { division, region } from "../schema";
+import { divisions, regions } from "../schema";
+
+type DivisionInput = {
+  name: string;
+};
 
 async function seedDivisions(regionName: string) {
   console.log("🌍 Seeding regions...");
 
-  const regResult = await db.query.region.findFirst({
-    where: eq(region.name, regionName),
+  const regResult = await db.query.regions.findFirst({
+    where: eq(regions.name, regionName),
   });
   if (!regResult) {
     console.error(`❌ Region "${regionName}" not found.`);
@@ -21,19 +25,19 @@ async function seedDivisions(regionName: string) {
     "divisions",
     `${regionName.toLowerCase()}.json`
   );
-  const divisions = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  const data: DivisionInput[] = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
-  for (const d of divisions) {
+  for (const d of data) {
     // check if a division with this name already exists in this region
-    const existing = await db.query.division.findFirst({
+    const existing = await db.query.divisions.findFirst({
       where: and(
-        eq(division.name, d.name),
-        eq(division.regionId, regResult.id)
+        eq(divisions.name, d.name),
+        eq(divisions.regionId, regResult.id)
       ),
     });
 
     if (!existing) {
-      await db.insert(division).values({
+      await db.insert(divisions).values({
         name: d.name,
         regionId: regResult.id,
       });
@@ -41,11 +45,11 @@ async function seedDivisions(regionName: string) {
     } else if (existing.regionId !== regResult.id) {
       // ensure the division is associated with the correct region
       await db
-        .update(division)
+        .update(divisions)
         .set({
           regionId: regResult.id,
         })
-        .where(eq(division.id, existing.id));
+        .where(eq(divisions.id, existing.id));
     }
   }
 

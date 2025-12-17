@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { db } from ".";
-import { region } from "../schema";
+import { regions } from "../schema";
 import { eq } from "drizzle-orm";
 
 type RegionInput = {
@@ -18,20 +18,20 @@ async function seedRegions() {
   const data: RegionInput[] = JSON.parse(file);
 
   for (const item of data) {
-    const existing = await db.query.region.findFirst({
-      where: eq(region.name, item.name),
+    const existing = await db.query.regions.findFirst({
+      where: eq(regions.name, item.name),
     });
 
     if (existing) {
-      console.log(`⚠️  Skipped: ${region.name}`);
+      console.log(`⚠️  Skipped: ${regions.name}`);
       continue;
     }
 
-    await db.insert(region).values({
+    await db.insert(regions).values({
       name: item.name,
     });
 
-    console.log(`✅ Inserted: ${region.name}`);
+    console.log(`✅ Inserted: ${regions.name}`);
   }
 
   console.log("🎉 Region seeding complete");

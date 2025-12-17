@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import "dotenv/config";
 import { db } from ".";
-import { division, subdivision } from "../schema";
+import { divisions, subdivisions } from "../schema";
 import { eq } from "drizzle-orm";
 
 type SubdivisionInput = {
@@ -11,8 +11,8 @@ type SubdivisionInput = {
 };
 
 async function seedSubdivisions(divisionName: string) {
-  const divisionResult = await db.query.division.findFirst({
-    where: eq(division?.name, divisionName),
+  const divisionResult = await db.query.divisions.findFirst({
+    where: eq(divisions?.name, divisionName),
   });
   if (!divisionResult) {
     console.error(`❌ Division "${divisionName}" not found.`);
@@ -24,21 +24,21 @@ async function seedSubdivisions(divisionName: string) {
     "subdivisions",
     `${divisionName.toLowerCase()}.json`
   );
-  const subdivisions: SubdivisionInput[] = await JSON.parse(
+  const data: SubdivisionInput[] = await JSON.parse(
     fs.readFileSync(filePath, "utf-8")
   );
 
-  for (const s of subdivisions) {
-    const existing = await db.query.subdivision.findFirst({
-      where: eq(subdivision.name, s.name),
+  for (const s of data) {
+    const existing = await db.query.subdivisions.findFirst({
+      where: eq(subdivisions.name, s.name),
     });
     if (existing) {
       await db
-        .update(subdivision)
-        .set({ name: s.name, divisionId: division.id })
-        .where(eq(subdivision.id, existing.id));
+        .update(subdivisions)
+        .set({ name: s.name, divisionId: divisions.id })
+        .where(eq(subdivisions.id, existing.id));
     } else {
-      await db.insert(subdivision).values({
+      await db.insert(subdivisions).values({
         name: s.name,
         divisionId: divisionResult.id,
       });

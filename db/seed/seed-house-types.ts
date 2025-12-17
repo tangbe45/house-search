@@ -3,21 +3,21 @@ import path from "path";
 import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { db } from ".";
-import { houseType } from "../schema";
+import { houseTypes } from "../schema";
 
 async function main() {
   console.log("Start seeding house types...");
 
   const houseTypesPath = path.join(__dirname, "house-types", "types.json");
-  const houseTypes = JSON.parse(fs.readFileSync(houseTypesPath, "utf-8"));
+  const data = JSON.parse(fs.readFileSync(houseTypesPath, "utf-8"));
 
-  for (const type of houseTypes) {
-    const existing = await db.query.houseType.findFirst({
-      where: eq(houseType.name, type.name),
+  for (const type of data) {
+    const existing = await db.query.houseTypes.findFirst({
+      where: eq(houseTypes.name, type.name),
     });
 
     if (!existing) {
-      await db.insert(houseType).values({
+      await db.insert(houseTypes).values({
         name: type.name,
         description: type.description,
       });

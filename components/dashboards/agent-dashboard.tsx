@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { PlusCircle, Copy, Trash2, Pencil, SquareUser } from "lucide-react";
+import { Trash2, Pencil, SquareUser, PlusCircle } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -19,6 +18,7 @@ import Image, { StaticImageData } from "next/image";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { CopyButton } from "../web/copy-button";
+import { isExpired } from "@/lib/is-expired";
 
 interface Property {
   id: string;
@@ -75,14 +75,14 @@ export default function AgentDashboard() {
       id: "1",
       token: "AGENT-123ABC",
       email: "user1@example.com",
-      expiresAt: "2025-11-10",
+      expiresAt: "2025-18-01T23:59:59Z",
       used: false,
     },
     {
       id: "2",
       token: "AGENT-XYZ456",
       email: "user2@example.com",
-      expiresAt: "2025-11-12",
+      expiresAt: "2025-11-12T23:59:59Z",
       used: true,
     },
   ]);
@@ -158,7 +158,7 @@ export default function AgentDashboard() {
               <CardTitle>Sold</CardTitle>
             </CardHeader>
             <CardContent className="text-center pt-0 text-gray-500 text-4xl font-bold">
-              32
+              0
             </CardContent>
           </Card>
           <Card className="pt-0 pb-4 hover:shadow-md gap-4 text-gray-400 overflow-hidden transition">
@@ -177,9 +177,13 @@ export default function AgentDashboard() {
             <h2 className="text-2xl font-bold">Your Properties</h2>
           </div>
           <div className="flex justify-end mb-2">
-            <Button size="sm" className={`flex items-center gap-2`}>
-              <PlusCircle className="h-4 w-4" /> Add Property
-            </Button>
+            <Link
+              href="dashboard/houses/add-house"
+              className={buttonVariants()}
+            >
+              <PlusCircle size={4} />
+              Add Property
+            </Link>
           </div>
 
           <Table>
@@ -195,7 +199,7 @@ export default function AgentDashboard() {
             </TableHeader>
             <TableBody>
               {properties.map((property) => (
-                <TableRow>
+                <TableRow key={property.id}>
                   <TableCell className="font-medium">
                     <Image
                       width={80}
@@ -250,7 +254,7 @@ export default function AgentDashboard() {
             </TableHeader>
             <TableBody>
               {tokens.map((token) => (
-                <TableRow>
+                <TableRow key={token.id}>
                   <TableCell className="font-medium">{token.email}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -262,7 +266,13 @@ export default function AgentDashboard() {
                   </TableCell>
                   <TableCell>{token.expiresAt}</TableCell>
                   <TableCell className="text-right">
-                    {token.used ? "Used" : "Not Used"}
+                    {token.used ? (
+                      <span className="text-green-600">Used</span>
+                    ) : isExpired(token.expiresAt) ? (
+                      <span className="text-red-600">Not used</span>
+                    ) : (
+                      <span className="text-gray-600">Not used</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button

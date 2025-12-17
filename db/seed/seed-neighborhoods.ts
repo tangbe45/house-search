@@ -3,11 +3,15 @@ import path from "path";
 import "dotenv/config";
 import { db } from ".";
 import { and, eq } from "drizzle-orm";
-import { neighborhood } from "../schema";
+import { neighborhoods } from "../schema";
+
+type NeighborhoodInput = {
+  name: string;
+};
 
 async function seedNeighborhoods(subdivisionName: string) {
-  const subdivisionResult = await db.query.subdivision.findFirst({
-    where: eq(neighborhood.name, subdivisionName),
+  const subdivisionResult = await db.query.subdivisions.findFirst({
+    where: eq(neighborhoods.name, subdivisionName),
   });
   if (!subdivisionResult) {
     console.error(`❌ Subdivision "${subdivisionName}" not found.`);
@@ -19,29 +23,31 @@ async function seedNeighborhoods(subdivisionName: string) {
     "neighborhoods",
     `${subdivisionName.toLowerCase()}.json`
   );
-  const neighborhoods = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  const data: NeighborhoodInput[] = JSON.parse(
+    fs.readFileSync(filePath, "utf-8")
+  );
 
-  for (const n of neighborhoods) {
+  for (const n of data) {
     // find existing neighborhood by name and subdivision
-    const existing = await db.query.neighborhood.findFirst({
+    const existing = await db.query.neighborhoods.findFirst({
       where: and(
-        eq(neighborhood.name, n.name),
-        eq(neighborhood.subdivisionId, subdivisionResult.id)
+        eq(neighborhoods.name, n.name),
+        eq(neighborhoods.subdivisionId, subdivisionResult.id)
       ),
     });
 
     if (existing) {
       // update by unique id
       await db
-        .update(neighborhood)
+        .update(neighborhoods)
         .set({
           name: n.name,
           subdivisionId: subdivisionResult.id,
         })
-        .where(eq(neighborhood.id, existing.subdivisionId));
+        .where(eq(neighborhoods.id, existing.subdivisionId));
     } else {
       // create new record
-      await db.insert(neighborhood).values({
+      await db.insert(neighborhoods).values({
         name: n.name,
         subdivisionId: subdivisionResult.id,
       });

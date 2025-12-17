@@ -38,21 +38,6 @@ export const user = pgTable("user", {
     .notNull(),
 });
 
-export const role = pgTable("role", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  name: text("name").notNull().unique(),
-  description: text("description"),
-});
-
-export const userRole = pgTable(
-  "user_role",
-  {
-    userId: uuid("user_id").notNull(),
-    roleId: uuid("role_id").notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.userId, t.roleId] })]
-);
-
 export const session = pgTable(
   "session",
   {
@@ -112,7 +97,22 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)]
 );
 
-export const roleInviteToken = pgTable("role_invite_token", {
+export const roles = pgTable("roles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+});
+
+export const userRoles = pgTable(
+  "user_roles",
+  {
+    userId: uuid("user_id").notNull(),
+    roleId: uuid("role_id").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.roleId] })]
+);
+
+export const roleInviteTokens = pgTable("role_invite_tokens", {
   id: uuid("id").defaultRandom().primaryKey(),
 
   token: text("token").notNull().unique(),
@@ -131,36 +131,36 @@ export const roleInviteToken = pgTable("role_invite_token", {
     .notNull(),
 });
 
-export const region = pgTable("region", {
+export const regions = pgTable("regions", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull().unique(),
 });
 
-export const division = pgTable("division", {
+export const divisions = pgTable("divisions", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   regionId: uuid("region_id").notNull(),
 });
 
-export const subdivision = pgTable("subdivision", {
+export const subdivisions = pgTable("subdivisions", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   divisionId: uuid("division_id").notNull(),
 });
 
-export const neighborhood = pgTable("neighborhood", {
+export const neighborhoods = pgTable("neighborhoods", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   subdivisionId: uuid("subdivision_id").notNull(),
 });
 
-export const houseType = pgTable("house_type", {
+export const houseTypes = pgTable("house_types", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
 });
 
-export const house = pgTable("house", {
+export const houses = pgTable("houses", {
   id: uuid("id").defaultRandom().primaryKey(),
 
   title: text("title").notNull(),
@@ -181,7 +181,6 @@ export const house = pgTable("house", {
   purpose: housePurposeEnum("purpose").default("FOR_RENT").notNull(),
   status: houseStatusEnum("status").default("AVAILABLE").notNull(),
 
-  agentId: uuid("agent_id").notNull(),
   houseTypeId: uuid("house_type_id").notNull(),
 
   regionId: uuid("region_id").notNull(),
@@ -198,7 +197,7 @@ export const house = pgTable("house", {
     .$onUpdate(() => new Date()),
 });
 
-export const media = pgTable("media", {
+export const medias = pgTable("medias", {
   id: uuid("id").defaultRandom().primaryKey(),
   url: text("url").notNull(),
 
@@ -229,37 +228,37 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
-export const houseRelations = relations(house, ({ one, many }) => ({
-  agent: one(user, {
-    fields: [house.agentId],
-    references: [user.id],
+export const houseRelations = relations(houses, ({ one, many }) => ({
+  // agent: one(user, {
+  //   fields: [house.agentId],
+  //   references: [user.id],
+  // }),
+  houseType: one(houseTypes, {
+    fields: [houses.houseTypeId],
+    references: [houseTypes.id],
   }),
-  houseType: one(houseType, {
-    fields: [house.houseTypeId],
-    references: [houseType.id],
+  region: one(regions, {
+    fields: [houses.regionId],
+    references: [regions.id],
   }),
-  region: one(region, {
-    fields: [house.regionId],
-    references: [region.id],
+  division: one(divisions, {
+    fields: [houses.divisionId],
+    references: [divisions.id],
   }),
-  division: one(division, {
-    fields: [house.divisionId],
-    references: [division.id],
+  subdivision: one(subdivisions, {
+    fields: [houses.subdivisionId],
+    references: [subdivisions.id],
   }),
-  subdivision: one(subdivision, {
-    fields: [house.subdivisionId],
-    references: [subdivision.id],
+  neighborhood: one(neighborhoods, {
+    fields: [houses.neighborhoodId],
+    references: [neighborhoods.id],
   }),
-  neighborhood: one(neighborhood, {
-    fields: [house.neighborhoodId],
-    references: [neighborhood.id],
-  }),
-  images: many(media),
+  images: many(medias),
 }));
 
 export const userRelation = relations(user, ({ many }) => ({
-  roles: many(userRole),
-  houses: many(house),
+  roles: many(userRoles),
+  houses: many(houses),
 }));
 
 export const schema = {
@@ -267,9 +266,11 @@ export const schema = {
   account,
   session,
   verification,
-  houseType,
-  region,
-  division,
-  subdivision,
-  neighborhood,
+  houseTypes,
+  houses,
+  medias,
+  regions,
+  divisions,
+  subdivisions,
+  neighborhoods,
 };
