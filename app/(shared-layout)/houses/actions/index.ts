@@ -1,11 +1,11 @@
 "use server";
 
 import { db } from "@/db/drizzle";
-import { house } from "@/db/schema";
+import { houses } from "@/db/schema";
 
 export async function getHouses() {
-  const houses = await db.select().from(house);
-  return houses;
+  const result = await db.select().from(houses);
+  return result;
 }
 
 // export async function getHouseById(id: string): Promise<HouseDetails | null> {
