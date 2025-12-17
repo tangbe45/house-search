@@ -6,8 +6,6 @@ import { houseCreateSchema } from "@/lib/validation/zod-schemas";
 
 import { db } from "@/db/drizzle";
 import { houses, medias } from "@/db/schema";
-import { HouseCreateSchema, HouseUpdateInput } from "@/types";
-import { eq } from "drizzle-orm";
 
 // export async function GET(req: Request) {
 //   const url = new URL(req.url);
