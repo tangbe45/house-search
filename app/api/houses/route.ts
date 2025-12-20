@@ -5,7 +5,7 @@ import { db } from "@/db/drizzle";
 import { houses, uploadedImages } from "@/db/schema";
 import { houseCreateSchema } from "@/lib/validation/zod-schemas";
 import { buildHouseConditions } from "@/lib/query-builder/build-house-conditions";
-import { and, sql, eq } from "drizzle-orm";
+import { and, sql, eq, desc } from "drizzle-orm";
 
 export async function GET(req: Request) {
   const {
@@ -56,7 +56,7 @@ export async function GET(req: Request) {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .limit(limit)
       .offset(skip)
-      .orderBy(houses.createdAt)
+      .orderBy(desc(houses.createdAt))
       .leftJoin(uploadedImages, eq(uploadedImages.houseId, houses.id))
       .groupBy(houses.id),
 

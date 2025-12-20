@@ -19,7 +19,7 @@ export function HousesPagination({
 }) {
   const pageNumbers = getPageNumbers(currentPage, totalPages);
   return (
-    <Pagination className="bg-slate-950 text-white w-full flex justify-center mt-4 rounded-md">
+    <Pagination className="w-full flex justify-center mt-4 rounded-md">
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
@@ -32,7 +32,7 @@ export function HousesPagination({
         {pageNumbers.map((number, i) => (
           <PaginationItem key={i}>
             <PaginationLink
-              className="data-[state=active]:bg-white data-[state=active]:text-blue-500 cursor-pointer"
+              className=" cursor-pointer"
               isActive={number !== "..." && currentPage === Number(number)}
               onClick={
                 number !== "..."

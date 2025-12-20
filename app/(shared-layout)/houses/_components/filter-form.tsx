@@ -371,7 +371,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
         <div className="flex items-center space-x-4">
           <Switch
             id="balcony"
-            checked={filter.hasParking}
+            checked={filter.hasBalcony}
             onCheckedChange={(val) =>
               setFilter((prev) => ({
                 ...prev,
