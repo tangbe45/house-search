@@ -197,9 +197,10 @@ export const houses = pgTable("houses", {
     .$onUpdate(() => new Date()),
 });
 
-export const medias = pgTable("medias", {
+export const uploadedImages = pgTable("uploaded_images", {
   id: uuid("id").defaultRandom().primaryKey(),
   url: text("url").notNull(),
+  status: text("status").default("TEMP"),
 
   houseId: uuid("house_id").notNull(),
 
@@ -253,7 +254,14 @@ export const houseRelations = relations(houses, ({ one, many }) => ({
     fields: [houses.neighborhoodId],
     references: [neighborhoods.id],
   }),
-  images: many(medias),
+  medias: many(uploadedImages),
+}));
+
+export const mediaRelations = relations(uploadedImages, ({ one }) => ({
+  house: one(houses, {
+    fields: [uploadedImages.houseId],
+    references: [houses.id],
+  }),
 }));
 
 export const userRelation = relations(user, ({ many }) => ({
@@ -268,7 +276,8 @@ export const schema = {
   verification,
   houseTypes,
   houses,
-  medias,
+  uploadedImages,
+  mediaRelations,
   regions,
   divisions,
   subdivisions,

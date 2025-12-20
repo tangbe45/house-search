@@ -1,3 +1,4 @@
+"use client";
 import { SlidersHorizontal } from "lucide-react";
 import { Button } from "../ui/button";
 import {
@@ -9,10 +10,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import FilterForm from "@/app/(shared-layout)/houses/_components/filter-form";
+import { useState } from "react";
 
 export const FilterButton = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button>
           <SlidersHorizontal size={4} />
@@ -26,7 +30,7 @@ export const FilterButton = () => {
             Reduce the number of house to the area of interest
           </DialogDescription>
         </DialogHeader>
-        <FilterForm />
+        <FilterForm onClose={() => setIsOpen(false)} />
       </DialogContent>
     </Dialog>
   );

@@ -3,10 +3,10 @@
 import { Resolver, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { zodResolver } from "@hookform/resolvers/zod";
+import imageCompression from "browser-image-compression";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,13 +25,16 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { max } from "drizzle-orm";
 import { Textarea } from "@/components/ui/textarea";
 import { houseCreateSchema } from "@/lib/validation/zod-schemas";
-import { compressImage } from "@/lib/image/compressImage";
 import { toast } from "sonner";
+import { LoaderIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export function AddPropertyForm() {
+  const router = useRouter();
+
   // lists loaded on mount or dynamically
   const [houseTypes, setHouseTypes] = useState<Array<LoadSchema>>([]);
   const [regions, setRegions] = useState<Array<LoadSchema>>([]);
@@ -70,31 +73,38 @@ export function AddPropertyForm() {
   ]);
   const [files, setFiles] = useState<(File | null)[]>([null, null, null]);
 
-  // handle image change for individual inputs
-  function handleImageChange(index: number, file?: File | null) {
-    const newFiles = [...files];
-    newFiles[index] = file || null;
-    setFiles(newFiles);
+  async function handleImageChange(index: number, file: File | null) {
+    if (!file) return;
 
+    // compress on frontend (industry standard)
+    const compressed = await imageCompression(file, {
+      maxSizeMB: 0.7,
+      maxWidthOrHeight: 1600,
+      useWebWorker: true,
+    });
+
+    const newFiles = [...files];
     const newPreviews = [...previews];
-    if (!file) {
-      newPreviews[index] = null;
-      setPreviews(newPreviews);
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    newPreviews[index] = url;
+
+    newFiles[index] = compressed;
+    newPreviews[index] = URL.createObjectURL(compressed);
+
+    setFiles(newFiles);
     setPreviews(newPreviews);
   }
 
-  // remove image at index
   function removeImageAt(index: number) {
     const newFiles = [...files];
-    if (previews[index]) URL.revokeObjectURL(previews[index] as string);
-    newFiles[index] = null;
-    setFiles(newFiles);
     const newPreviews = [...previews];
+
+    if (newPreviews[index]) {
+      URL.revokeObjectURL(newPreviews[index]!);
+    }
+
+    newFiles[index] = null;
     newPreviews[index] = null;
+
+    setFiles(newFiles);
     setPreviews(newPreviews);
   }
 
@@ -188,53 +198,49 @@ export function AddPropertyForm() {
 
   async function onSubmit(values: HouseCreateInput) {
     try {
-      // compress selected images
-      const compressedFiles: File[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        if (f) {
-          const c = await compressImage(f, 1200, 0.78);
-          compressedFiles.push(c);
-        }
-      }
+      const selectedImages = files.filter(Boolean) as File[];
 
-      // build FormData
-      const formData = new FormData();
-      // append fields (strings) — server uses zod coercions
-      Object.entries(values).forEach(([key, val]) => {
-        // booleans and numbers will be converted on server; we stringify them here
-        formData.append(key, String(val ?? ""));
-      });
+      const uploaded = await Promise.all(
+        selectedImages.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", "habi_move");
 
-      // append images individually
-      compressedFiles.forEach((f, idx) =>
-        formData.append("imageFiles", f, f.name)
+          const res = await fetch(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+            { method: "POST", body: formData }
+          );
+
+          return res.json();
+        })
       );
 
+      const imageUrls = uploaded.map((img) => img.secure_url);
+
+      // 2. send clean payload to backend
       const res = await fetch("/api/houses", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...values,
+          images: imageUrls,
+        }),
       });
 
-      if (!res.ok) {
-        const err = await res
-          .json()
-          .catch(() => ({ message: "Unknown server error" }));
-        toast.error(`Server error: ${err?.message || res.statusText}`);
+      const result = await res.json();
+
+      if (!result.success) {
+        toast.error(result.message);
         return;
       }
 
-      const result = await res.json();
-      toast.success(`${result.message}`);
-
+      toast.success(result.message);
       form.reset();
       setFiles([null, null, null]);
-      previews.forEach((p) => p && URL.revokeObjectURL(p as string));
       setPreviews([null, null, null]);
-    } catch (err: any) {
-      console.error(err);
-      alert("Error: " + (err?.message || "Submit failed"));
-      toast.error(`Error: ${err?.message || "Submit failed"}`);
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || "Failed to submit");
     }
   }
 
@@ -269,39 +275,6 @@ export function AddPropertyForm() {
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Title</FormLabel>
-                <FormControl>
-                  <Input placeholder="Modern one room for rent" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="price"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Price</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    placeholder="10,000"
-                    value={field.value ?? ""}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
         <FormField
           control={form.control}
           name="houseTypeId"
@@ -329,6 +302,39 @@ export function AddPropertyForm() {
             </FormItem>
           )}
         />
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl>
+                  <Input placeholder="Modern one room for rent" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Price</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="10,000"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Bedrooms & Bathrooms */}
         <div className="grid grid-cols-2 gap-4">
@@ -341,7 +347,8 @@ export function AddPropertyForm() {
                 <FormControl>
                   <Input
                     type="number"
-                    value={field.value ?? ""}
+                    min={0}
+                    value={field.value}
                     onChange={(e) => field.onChange(e.target.valueAsNumber)}
                   />
                 </FormControl>
@@ -358,7 +365,8 @@ export function AddPropertyForm() {
                 <FormControl>
                   <Input
                     type="number"
-                    value={field.value ?? ""}
+                    min={0}
+                    value={field.value}
                     onChange={(e) => field.onChange(e.target.valueAsNumber)}
                   />
                 </FormControl>
@@ -381,7 +389,7 @@ export function AddPropertyForm() {
                     onCheckedChange={(checked) => field.onChange(checked)}
                   />
                 </FormControl>
-                <FormLabel>Internal toilet</FormLabel>
+                <FormLabel>Has internal toilet</FormLabel>
                 <FormMessage />
               </FormItem>
             )}
@@ -399,7 +407,7 @@ export function AddPropertyForm() {
                     onCheckedChange={(checked) => field.onChange(checked)}
                   />
                 </FormControl>
-                <FormLabel>Parking</FormLabel>
+                <FormLabel>Has parking</FormLabel>
                 <FormMessage />
               </FormItem>
             )}
@@ -417,7 +425,7 @@ export function AddPropertyForm() {
                     onCheckedChange={(checked) => field.onChange(checked)}
                   />
                 </FormControl>
-                <FormLabel>Well</FormLabel>
+                <FormLabel>Has well</FormLabel>
                 <FormMessage />
               </FormItem>
             )}
@@ -435,7 +443,7 @@ export function AddPropertyForm() {
                     onCheckedChange={(checked) => field.onChange(checked)}
                   />
                 </FormControl>
-                <FormLabel>Fence</FormLabel>
+                <FormLabel>Is Fenced</FormLabel>
                 <FormMessage />
               </FormItem>
             )}
@@ -452,7 +460,7 @@ export function AddPropertyForm() {
                     onCheckedChange={(checked) => field.onChange(checked)}
                   />
                 </FormControl>
-                <FormLabel>Balcony</FormLabel>
+                <FormLabel>Has balcony</FormLabel>
                 <FormMessage />
               </FormItem>
             )}
@@ -594,7 +602,7 @@ export function AddPropertyForm() {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Price</FormLabel>
+              <FormLabel>Description</FormLabel>
               <FormControl>
                 <Textarea {...field} />
               </FormControl>
@@ -602,8 +610,9 @@ export function AddPropertyForm() {
             </FormItem>
           )}
         />
+        {/* Image selection grid */}
         <div>
-          <label className="block text-gray-300 text-sm font-medium mb-2">
+          <label className="block text-sm font-medium mb-2">
             Images (up to 3)
           </label>
           <div className="grid grid-cols-3 gap-4">
@@ -620,25 +629,24 @@ export function AddPropertyForm() {
                       <button
                         type="button"
                         onClick={() => removeImageAt(i)}
-                        className="absolute top-2 right-2 bg-red-500 rounded-full w-6 flex justify-center items-center h-6 p-1 shadow"
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow cursor-pointer"
                         title="Remove"
                       >
                         ✕
                       </button>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center cursor-pointer p-4">
+                    <label className="flex flex-col items-center justify-center cursor-pointer p-4 text-center">
                       <span className="text-sm text-muted-foreground">
                         Click to choose
                       </span>
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0] ?? null;
-                          handleImageChange(i, f || null);
-                        }}
                         className="hidden"
+                        onChange={(e) =>
+                          handleImageChange(i, e.target.files?.[0] ?? null)
+                        }
                       />
                     </label>
                   )}
@@ -647,7 +655,27 @@ export function AddPropertyForm() {
             ))}
           </div>
         </div>
-        <Button type="submit">Submit</Button>
+        <div className="flex justify-end gap-x-4">
+          <Button disabled={form.formState.isSubmitting} type="submit">
+            {form.formState.isSubmitting
+              ? `${(
+                  <LoaderIcon
+                    role="status"
+                    aria-label="Loading"
+                    className={cn("size-4 animate-spin")}
+                  />
+                )} Submitting...`
+              : "Submit"}
+          </Button>
+          <Button
+            variant={"destructive"}
+            disabled={form.formState.isSubmitting}
+            type="button"
+            onClick={() => router.push("/dashboard")}
+          >
+            Cancel
+          </Button>
+        </div>
       </form>
     </Form>
   );

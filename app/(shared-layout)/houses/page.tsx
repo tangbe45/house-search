@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import HouseList from "./_components/house-list";
 import { FilterButton } from "@/components/web/filter-button";
 
@@ -10,7 +11,9 @@ export default function HousesPage() {
           <FilterButton />
         </div>
       </div>
-      <HouseList />
+      <Suspense fallback={<div>Loading search parameters...</div>}>
+        <HouseList />
+      </Suspense>
     </section>
   );
 }

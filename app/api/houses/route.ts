@@ -1,135 +1,180 @@
 // app/api/houses/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-import { houseCreateSchema } from "@/lib/validation/zod-schemas";
 
 import { db } from "@/db/drizzle";
-import { houses, medias } from "@/db/schema";
+import { houses, uploadedImages } from "@/db/schema";
+import { houseCreateSchema } from "@/lib/validation/zod-schemas";
+import { buildHouseConditions } from "@/lib/query-builder/build-house-conditions";
+import { and, sql, eq } from "drizzle-orm";
 
-// export async function GET(req: Request) {
-//   const url = new URL(req.url);
-//   const params = Object.fromEntries(url.searchParams.entries());
-//   const page = Math.max(1, Number(params.page || 1));
-//   const limit = Math.min(100, Number(params.limit || 12));
-//   const skip = (page - 1) * limit;
+export async function GET(req: Request) {
+  const {
+    id,
+    title,
+    price,
+    location,
+    bedrooms,
+    bathrooms,
+    hasFence,
+    hasInternalToilet,
+  } = houses;
+  const url = new URL(req.url);
+  const params = Object.fromEntries(url.searchParams.entries());
+  console.log(params);
+  const page = Math.max(1, Number(params.page || 1));
+  const limit = Math.min(100, Number(params.limit || 12));
+  const skip = (page - 1) * limit;
 
-//   const where = buildHouseWhere(params);
+  const conditions = buildHouseConditions(params);
+  console.log(conditions);
 
-//   const [houses, total] = await Promise.all([
-//     db.house.findMany({
-//       where,
-//       include: { images: true },
-//       take: limit,
-//       skip,
-//       orderBy: { createdAt: "desc" },
-//     }),
-//     db.house.count({ where }),
-//   ]);
+  const [housesResult, total] = await Promise.all([
+    db
+      .select({
+        id,
+        title,
+        price,
+        location,
+        bedrooms,
+        bathrooms,
+        hasFence,
+        hasInternalToilet,
 
-//   return new Response(
-//     JSON.stringify({
-//       houses,
-//       total,
-//       page,
-//       pages: Math.max(1, Math.ceil(total / limit)),
-//     }),
-//     { headers: { "Content-Type": "application/json" } }
-//   );
-// }
+        images: sql`
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', ${uploadedImages.id},
+                  'url', ${uploadedImages.url}
+                )
+              ) FILTER (WHERE ${uploadedImages.id} IS NOT NULL),
+              '[]'
+            )
+          `.as("images"),
+      })
+      .from(houses)
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .limit(limit)
+      .offset(skip)
+      .orderBy(houses.createdAt)
+      .leftJoin(uploadedImages, eq(uploadedImages.houseId, houses.id))
+      .groupBy(houses.id),
+
+    db.$count(houses, ...conditions),
+  ]);
+
+  const processedHouses = housesResult.map((item) => {
+    const images =
+      typeof item.images === "string" ? JSON.parse(item.images) : item.images;
+    return {
+      id: item.id,
+      location: item.location,
+      price: item.price,
+      title: item.title,
+      bedrooms: item.bedrooms,
+      bathrooms: item.bathrooms,
+      hasFence: item.hasFence,
+      hasInternalToilet: item.hasInternalToilet,
+      imageUrl: (images as Array<{ id: string; url: string }>)[0]?.url,
+    };
+  });
+
+  return new Response(
+    JSON.stringify({
+      houses: processedHouses,
+      total,
+      page,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    }),
+    { headers: { "Content-Type": "application/json" } }
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const fd = await req.formData();
+    // 1. Parse JSON
+    const body = await req.json();
+    console.log(body);
 
-    // convert form fields to plain object
-    const fields: Record<string, string> = {};
-    for (const [key, value] of fd.entries()) {
-      // skip file entries; we'll collect them separately
-      if (value instanceof File) continue;
-      fields[key] = String(value ?? "");
+    // 2. Validate payload
+    const parsed = houseCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", issues: parsed.error.flatten() },
+        { status: 400 }
+      );
     }
 
-    // collect image Files
-    const imageFiles: File[] = [];
-    for (const entry of fd.getAll("imageFiles")) {
-      if (entry instanceof File) imageFiles.push(entry);
-    }
+    const {
+      title,
+      price,
+      location,
+      bedrooms,
+      bathrooms,
+      purpose,
+      houseTypeId,
+      regionId,
+      subdivisionId,
+      divisionId,
+      hasBalcony,
+      hasFence,
+      neighborhoodId,
+      hasInternalToilet,
+      hasWell,
+      hasParking,
+      description,
+      images,
+    } = parsed.data;
 
-    // Validate fields with Zod (coercions will convert strings -> numbers/booleans)
-    const parsed = houseCreateSchema.parse(fields);
+    // 3. Fake auth placeholder (replace later)
+    const ownerId = "00000000-0000-0000-0000-000000000001";
 
-    // save files to /public/uploads (ensure folder exists)
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    if (!fs.existsSync(uploadsDir))
-      fs.mkdirSync(uploadsDir, { recursive: true });
-
-    const imageUrls: string[] = [];
-    for (let i = 0; i < imageFiles.length; i++) {
-      const file = imageFiles[i];
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      // generate unique filename
-      const timestamp = Date.now();
-      const safeName = file.name.replace(/\s+/g, "_").replace(/[^\w.-]/g, "");
-      const filename = `${timestamp}-${i}-${safeName}`;
-      const filepath = path.join(uploadsDir, filename);
-
-      fs.writeFileSync(filepath, buffer);
-
-      const host = process.env.LOCAL_HOST;
-      const protocol = process.env.NODE_ENV === "production" ? "https" : "http"; // Adjust based on your environment
-      const fullUrl = `${protocol}://${host}/uploads/${filename}`;
-
-      // public URL
-      // imageUrls.push(`/uploads/${filename}`);
-      imageUrls.push(fullUrl);
-    }
-
-    // save to DB (example using Prisma — adjust model fields)
-    const result = await db
+    // 4. Create house (transaction recommended)
+    const [house] = await db
       .insert(houses)
       .values({
-        title: parsed.title,
-        description: parsed.description ?? null,
-        price: parsed.price,
-        location: parsed.location,
-        bedrooms: parsed.bedrooms,
-        bathrooms: parsed.bathrooms,
-
-        hasInternalToilet: parsed.hasInternalToilet ?? false,
-        hasParking: parsed.hasParking ?? false,
-        hasWell: parsed.hasWell ?? false,
-        hasFence: parsed.hasFence ?? false,
-        hasBalcony: parsed.hasBalcony ?? false,
-
-        purpose: parsed.purpose,
-        houseTypeId: parsed.houseTypeId,
-        regionId: parsed.regionId,
-        divisionId: parsed.divisionId,
-        subdivisionId: parsed.subdivisionId,
-        neighborhoodId: parsed.neighborhoodId,
+        title,
+        price,
+        location,
+        bedrooms,
+        bathrooms,
+        purpose,
+        houseTypeId,
+        regionId,
+        subdivisionId,
+        divisionId,
+        hasBalcony,
+        hasFence,
+        neighborhoodId,
+        hasInternalToilet,
+        hasWell,
+        hasParking,
+        description,
       })
       .returning();
 
-    if (imageUrls.length > 0) {
-      await db.insert(medias).values(
-        imageUrls.map((url) => ({
-          houseId: result[0].id,
+    if (images!.length > 0) {
+      await db.insert(uploadedImages).values(
+        images!.map((url) => ({
+          houseId: house.id,
           url,
         }))
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "House added successfully",
-    });
-    // return NextResponse.json({ id: houseResult?.id, images: houseResult?.images });
-  } catch (err: any) {
-    console.error("Add house error:", err);
-    const message = err?.message || "Server error";
-    return NextResponse.json({ success: false, message }, { status: 500 });
+    // 6. Success response
+    return NextResponse.json(
+      { success: true, message: "House added successfully" },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("CREATE_HOUSE_ERROR:", error);
+    const err = error as Error;
+
+    return NextResponse.json(
+      { success: false, message: err.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }
 

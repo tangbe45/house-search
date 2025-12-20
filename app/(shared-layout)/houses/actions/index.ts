@@ -1,11 +1,64 @@
 "use server";
 
 import { db } from "@/db/drizzle";
-import { houses } from "@/db/schema";
+import { houses, uploadedImages } from "@/db/schema";
+import { sql, eq } from "drizzle-orm";
 
 export async function getHouses() {
-  const result = await db.select().from(houses);
-  return result;
+  const {
+    id,
+    title,
+    price,
+    location,
+    bedrooms,
+    bathrooms,
+    hasFence,
+    hasInternalToilet,
+  } = houses;
+  const result = await db
+    .select({
+      id,
+      title,
+      price,
+      location,
+      bedrooms,
+      bathrooms,
+      hasFence,
+      hasInternalToilet,
+
+      images: sql`
+      COALESCE(
+        json_agg(
+          json_build_object(
+            'id', ${uploadedImages.id},
+            'url', ${uploadedImages.url}
+          )
+        ) FILTER (WHERE ${uploadedImages.id} IS NOT NULL),
+        '[]'
+      )
+    `.as("images"),
+    })
+    .from(houses)
+    .leftJoin(uploadedImages, eq(uploadedImages.houseId, houses.id))
+    .groupBy(houses.id);
+
+  const processedHouses = result.map((item) => {
+    const images =
+      typeof item.images === "string" ? JSON.parse(item.images) : item.images;
+    return {
+      id: item.id,
+      location: item.location,
+      price: item.price,
+      title: item.title,
+      bedrooms: item.bedrooms,
+      bathrooms: item.bathrooms,
+      hasFence: item.hasFence,
+      hasInternalToilet: item.hasInternalToilet,
+      imageUrl: (images as Array<{ id: string; url: string }>)[0]?.url,
+    };
+  });
+
+  return processedHouses;
 }
 
 // export async function getHouseById(id: string): Promise<HouseDetails | null> {

@@ -10,22 +10,21 @@ export const houseCreateSchema = z.object({
     ),
   description: z.string().optional(),
   purpose: z.enum(["FOR_RENT", "FOR_SALE", "SHORT_STAY"]),
-  houseTypeId: z.uuid("Invalid input: Invalid type"),
-  location: z.string().min(1, "Invalid input: Specific location is required"),
+  houseTypeId: z.uuid("Invalid input"),
+  location: z.string().min(1, "Specific location is required"),
   bedrooms: z.coerce.number().nonnegative(),
   bathrooms: z.coerce.number().nonnegative(),
-  price: z.coerce
-    .number("Invalid input: Requires a positive number")
-    .positive(),
+  price: z.coerce.number("Requires a positive number").positive().min(500),
   hasInternalToilet: z.coerce.boolean().optional(),
   hasParking: z.coerce.boolean().optional(),
   hasWell: z.coerce.boolean().optional(),
   hasFence: z.coerce.boolean().optional(),
   hasBalcony: z.coerce.boolean().optional(),
-  regionId: z.uuid("Invalid input: Invalid type"),
-  divisionId: z.uuid("Invalid input: Invalid type"),
-  subdivisionId: z.uuid("Invalid input: Invalid type"),
-  neighborhoodId: z.uuid("Invalid input: Invalid type"),
+  regionId: z.uuid("Invalid input"),
+  divisionId: z.uuid("Invalid input"),
+  subdivisionId: z.uuid("Invalid input"),
+  neighborhoodId: z.uuid("Invalid input"),
+  images: z.array(z.string().url()).max(3).optional(),
 });
 
 /* ---------- UPDATE ---------- */
