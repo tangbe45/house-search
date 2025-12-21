@@ -161,7 +161,6 @@
 import { CldImage } from "next-cloudinary";
 
 import { MapPin, BedDouble, Bath, Check, X } from "lucide-react";
-import Image from "next/image";
 
 type HouseCardProps = {
   title: string;

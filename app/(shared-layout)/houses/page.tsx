@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import HouseList from "./_components/house-list";
 import { FilterButton } from "@/components/web/filter-button";
+import { CustomSpinner } from "@/components/web/CustomSpinner";
 
 export default function HousesPage() {
   return (
@@ -11,7 +12,13 @@ export default function HousesPage() {
           <FilterButton />
         </div>
       </div>
-      <Suspense fallback={<div>Loading search parameters...</div>}>
+      <Suspense
+        fallback={
+          <div>
+            <CustomSpinner style="w-12 h-12 text-indigo-600" />
+          </div>
+        }
+      >
         <HouseList />
       </Suspense>
     </section>

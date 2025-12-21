@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { HousesPagination } from "@/components/web/HousesPagination";
 import { CustomSpinner } from "@/components/web/CustomSpinner";
+import Link from "next/link";
 
 export default function HouseList() {
   const params = useSearchParams();
@@ -16,16 +17,15 @@ export default function HouseList() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setLoading(true);
     const controller = new AbortController();
     async function load() {
-      setLoading(true);
       try {
         const res = await fetch(`/api/houses?${params.toString()}`, {
           signal: controller.signal,
         });
         if (!res.ok) throw new Error("Failed");
         const json = await res.json();
-        console.log(json);
         setHouses(json.houses || []);
         setTotal(json.total || 0);
         setPages(json.pages || 1);
@@ -59,17 +59,19 @@ export default function HouseList() {
             <div className="flex-1">
               <div className="pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-3 pb-8">
                 {houses.map((house) => (
-                  <HouseCard
-                    key={house.id}
-                    title={house.title}
-                    price={house.price.toString()}
-                    location={house.location}
-                    bedrooms={house.bedrooms}
-                    bathrooms={house.bathrooms}
-                    hasFence={house.hasFence}
-                    hasInternalToilet={house.hasInternalToilet}
-                    imageUrl={house.imageUrl ?? url}
-                  />
+                  <Link href={`/houses/${house.id}`} key={house.id}>
+                    <HouseCard
+                      key={house.id}
+                      title={house.title}
+                      price={house.price.toString()}
+                      location={house.location}
+                      bedrooms={house.bedrooms}
+                      bathrooms={house.bathrooms}
+                      hasFence={house.hasFence}
+                      hasInternalToilet={house.hasInternalToilet}
+                      imageUrl={house.imageUrl ?? url}
+                    />
+                  </Link>
                 ))}
               </div>
               <HousesPagination

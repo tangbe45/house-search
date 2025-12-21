@@ -181,12 +181,22 @@ export const houses = pgTable("houses", {
   purpose: housePurposeEnum("purpose").default("FOR_RENT").notNull(),
   status: houseStatusEnum("status").default("AVAILABLE").notNull(),
 
-  houseTypeId: uuid("house_type_id").notNull(),
+  houseTypeId: uuid("house_type_id")
+    .references(() => houseTypes.id, { onDelete: "restrict" })
+    .notNull(),
 
-  regionId: uuid("region_id").notNull(),
-  divisionId: uuid("division_id").notNull(),
-  subdivisionId: uuid("subdivision_id").notNull(),
-  neighborhoodId: uuid("neighborhood_id").notNull(),
+  regionId: uuid("region_id")
+    .references(() => regions.id, { onDelete: "restrict" })
+    .notNull(),
+  divisionId: uuid("division_id")
+    .references(() => divisions.id, { onDelete: "restrict" })
+    .notNull(),
+  subdivisionId: uuid("subdivision_id")
+    .references(() => subdivisions.id, { onDelete: "restrict" })
+    .notNull(),
+  neighborhoodId: uuid("neighborhood_id")
+    .references(() => neighborhoods.id, { onDelete: "restrict" })
+    .notNull(),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
@@ -202,7 +212,9 @@ export const uploadedImages = pgTable("uploaded_images", {
   url: text("url").notNull(),
   status: text("status").default("TEMP"),
 
-  houseId: uuid("house_id").notNull(),
+  houseId: uuid("house_id")
+    .references(() => houses.id, { onDelete: "cascade" })
+    .notNull(),
 
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
