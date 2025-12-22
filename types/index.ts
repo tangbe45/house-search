@@ -15,22 +15,17 @@ export type Region = { id: string | ""; name: string };
 export type Division = { id: string | ""; name: string };
 export type Subdivision = { id: string | ""; name: string };
 export type Neighborhood = { id: string | ""; name: string };
-
 export type HouseType = {
   name: string;
   id: string;
 };
+
 export type HouseFilter = {
-  search?: string;
   houseType?: string;
   minPrice?: string;
   maxPrice?: string;
-  bedrooms?: string;
-  bathrooms?: string;
   hasInternalToilet?: boolean;
   hasWell?: boolean;
-  forRent?: boolean;
-  forSale?: boolean;
   hasParking?: boolean;
   hasFence?: boolean;
   hasBalcony?: boolean;
@@ -40,6 +35,7 @@ export type HouseFilter = {
   subdivision?: string;
   neighborhood?: string;
 };
+
 export type LocationData = {
   regions: Region[] | "";
   divisions: Division[] | "";

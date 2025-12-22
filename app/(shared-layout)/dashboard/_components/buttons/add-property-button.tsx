@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AddPropertyForm } from "../forms/add-property-form";
+import { AddHouseForm } from "../forms/add-house-form";
 
 const AddPropertyButton = () => {
   return (
@@ -29,7 +29,7 @@ const AddPropertyButton = () => {
           </DialogDescription>
         </DialogHeader>
         <div className="h-full">
-          <AddPropertyForm />
+          <AddHouseForm />
         </div>
       </DialogContent>
     </Dialog>

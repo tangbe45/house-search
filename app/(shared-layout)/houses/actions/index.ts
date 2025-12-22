@@ -63,7 +63,18 @@ export async function getHouses() {
   return processedHouses;
 }
 
-export async function getHouseById(id: string) {
+export async function getHouseById(id: string, tag?: string) {
+  if (tag) {
+    const house = await db
+      .select()
+      .from(houses)
+      .leftJoin(uploadedImages, eq(uploadedImages.houseId, houses.id))
+      .where(eq(houses.id, id));
+
+    console.log(house);
+    return house;
+  }
+
   const {
     id: houseId,
     title,

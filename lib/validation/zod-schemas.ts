@@ -24,12 +24,15 @@ export const houseCreateSchema = z.object({
   divisionId: z.uuid("Invalid input"),
   subdivisionId: z.uuid("Invalid input"),
   neighborhoodId: z.uuid("Invalid input"),
-  images: z.array(z.string().url()).max(3).optional(),
+  images: z
+    .array(z.object({ url: z.url(), publicId: z.string() }))
+    .max(3)
+    .optional(),
 });
 
 /* ---------- UPDATE ---------- */
 export const houseUpdateSchema = houseCreateSchema.partial().extend({
-  id: z.cuid(),
+  id: z.uuid(),
 });
 
 /* ---------- FILTER ---------- */

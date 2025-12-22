@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
-import { HouseCreateInput, LoadSchema } from "@/types";
+import { HouseCreateInput, HouseUpdateInput, LoadSchema } from "@/types";
 import {
   Select,
   SelectContent,
@@ -32,7 +32,7 @@ import { LoaderIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-export function AddPropertyForm() {
+export function AddHouseForm() {
   const router = useRouter();
 
   // lists loaded on mount or dynamically
@@ -91,6 +91,8 @@ export function AddPropertyForm() {
 
     setFiles(newFiles);
     setPreviews(newPreviews);
+    console.log(previews);
+    console.log(files);
   }
 
   function removeImageAt(index: number) {
@@ -215,7 +217,10 @@ export function AddPropertyForm() {
         })
       );
 
-      const imageUrls = uploaded.map((img) => img.secure_url);
+      const imageUrls = uploaded.map((img) => ({
+        url: img.secure_url,
+        publicId: img.public_id,
+      }));
 
       // 2. send clean payload to backend
       const res = await fetch("/api/houses", {

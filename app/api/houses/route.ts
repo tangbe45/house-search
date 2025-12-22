@@ -2,10 +2,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "@/db/drizzle";
-import { houses, uploadedImages } from "@/db/schema";
+import { houses, roles, uploadedImages, userRoles } from "@/db/schema";
 import { houseCreateSchema } from "@/lib/validation/zod-schemas";
 import { buildHouseConditions } from "@/lib/query-builder/build-house-conditions";
-import { and, sql, eq, desc } from "drizzle-orm";
+import { and, sql, eq, desc, is } from "drizzle-orm";
+import { auth } from "@/lib/auth";
+import "dotenv/config";
+import { headers } from "next/headers";
+import { he } from "zod/v4/locales";
+import z from "zod";
 
 export async function GET(req: Request) {
   const {
@@ -92,6 +97,34 @@ export async function GET(req: Request) {
 
 export async function POST(req: NextRequest) {
   try {
+    // 0. Authenticate user
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const rolesResult = await db
+      .select({ name: roles.name })
+      .from(userRoles)
+      .where(eq(userRoles.userId, session.user.id))
+      .leftJoin(roles, eq(roles.id, userRoles.roleId));
+
+    const isAuthorized = rolesResult.some(
+      (role) => role.name === "agent" || role.name === "admin"
+    );
+
+    if (isAuthorized === false) {
+      return NextResponse.json(
+        { success: false, message: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    const ownerId = session.user.id;
+
     // 1. Parse JSON
     const body = await req.json();
     console.log(body);
@@ -100,7 +133,7 @@ export async function POST(req: NextRequest) {
     const parsed = houseCreateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid input", issues: parsed.error.flatten() },
+        { error: "Invalid input", issues: z.treeifyError(parsed.error) },
         { status: 400 }
       );
     }
@@ -126,9 +159,6 @@ export async function POST(req: NextRequest) {
       images,
     } = parsed.data;
 
-    // 3. Fake auth placeholder (replace later)
-    const ownerId = "00000000-0000-0000-0000-000000000001";
-
     // 4. Create house (transaction recommended)
     const [house] = await db
       .insert(houses)
@@ -139,6 +169,7 @@ export async function POST(req: NextRequest) {
         bedrooms,
         bathrooms,
         purpose,
+        agentId: ownerId,
         houseTypeId,
         regionId,
         subdivisionId,
@@ -155,9 +186,10 @@ export async function POST(req: NextRequest) {
 
     if (images!.length > 0) {
       await db.insert(uploadedImages).values(
-        images!.map((url) => ({
+        images!.map((obj) => ({
           houseId: house.id,
-          url,
+          publicId: obj.publicId,
+          url: obj.url,
         }))
       );
     }
@@ -178,69 +210,26 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// export async function GET(req: NextRequest) {
-//   try {
-//     const { searchParams } = new URL(req.url);
-//     const houseType = searchParams.get("houseType");
-//     const minPrice = searchParams.get("minPrice");
-//     const maxPrice = searchParams.get("maxPrice");
-//     const bedrooms = searchParams.get("bedrooms");
-//     const bathrooms = searchParams.get("bathrooms");
-//     const hasInternalToilet = searchParams.get("hasInternalToilet");
-//     const hasWell = searchParams.get("hasWell");
-//     const hasParking = searchParams.get("hasParking");
-//     const hasFence = searchParams.get("hasFence");
-//     const hasBalcony = searchParams.get("hasBalcony");
-//     const region = searchParams.get("region");
-//     const division = searchParams.get("division");
-//     const subdivision = searchParams.get("subdivision");
-//     const neighborhood = searchParams.get("neighborhood");
-//     const page = searchParams.get("page");
-//     const size = searchParams.get("size");
+export async function PUT(req: NextRequest) {
+  const session = await auth.api.getSession({ headers: await headers() });
 
-//     let where: Prisma.HouseWhereInput = {
-//       ...(houseType && {
-//         houseTypeId: { equals: houseType, mode: "insensitive" },
-//       }),
-//       ...(minPrice && { price: { gte: parseFloat(minPrice) } }),
-//       ...(maxPrice && { price: { lte: parseFloat(maxPrice) } }),
-//       ...(bedrooms && { bedrooms: { equals: parseInt(bedrooms) } }),
-//       ...(bathrooms && { bathrooms: { equals: parseInt(bathrooms) } }),
-//       ...(hasInternalToilet !== null && {
-//         hasInternalToilet: Boolean(hasInternalToilet),
-//       }),
-//       ...(hasWell !== null && { hasWell: Boolean(hasWell) }),
-//       ...(hasParking !== null && { hasParking: Boolean(hasParking) }),
-//       ...(hasFence !== null && { hasFence: Boolean(hasFence) }),
-//       ...(hasBalcony !== null && { hasBalcony: Boolean(hasBalcony) }),
-//       ...(region && { regionId: region }),
-//       ...(division && { divisionId: division }),
-//       ...(subdivision && { subdivisionId: subdivision }),
-//       ...(neighborhood && { neighborhoodId: neighborhood }),
-//     };
+  console.log(session);
 
-//     const currentPage = Number(page) ?? 1;
-//     const pageSize = Number(size) ?? 21;
+  if (!session) {
+    return NextResponse.json(
+      { success: false, message: "Unauthorized" },
+      { status: 401 }
+    );
+  }
 
-//     const [count, houses] = await Promise.all([
-//       db.house.count({ where: where }),
-//       db.house.findMany({
-//         where: where,
-//         include: { images: true },
-//         orderBy: {
-//           createdAt: "desc",
-//         },
-//         skip: (currentPage - 1) * pageSize,
-//         take: pageSize,
-//       }),
-//     ]);
+  return NextResponse.json({ user: session.user });
 
-//     let totalPages = Math.ceil(count / pageSize);
-
-//     return NextResponse.json({ houses, totalPages });
-//   } catch (err) {
-//     console.error("Get houses error:", err);
-//     const message = (err instanceof Error && err?.message) || "Server error";
-//     return NextResponse.json({ message }, { status: 500 });
-//   }
-// }
+  // if (session.user.role !== "agent") {
+  //   throw new Error("Forbidden");
+  // }
+  // To be implemented
+  // return NextResponse.json(
+  //   { success: false, message: "Not implemented" },
+  //   { status: 501 }
+  // );
+}

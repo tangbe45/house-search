@@ -106,8 +106,12 @@ export const roles = pgTable("roles", {
 export const userRoles = pgTable(
   "user_roles",
   {
-    userId: uuid("user_id").notNull(),
-    roleId: uuid("role_id").notNull(),
+    userId: text("user_id")
+      .references(() => user.id, { onDelete: "cascade" })
+      .notNull(),
+    roleId: uuid("role_id")
+      .references(() => roles.id, { onDelete: "cascade" })
+      .notNull(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.roleId] })]
 );
@@ -181,6 +185,10 @@ export const houses = pgTable("houses", {
   purpose: housePurposeEnum("purpose").default("FOR_RENT").notNull(),
   status: houseStatusEnum("status").default("AVAILABLE").notNull(),
 
+  agentId: text("agent_id")
+    .references(() => user.id, { onDelete: "set null" })
+    .notNull(),
+
   houseTypeId: uuid("house_type_id")
     .references(() => houseTypes.id, { onDelete: "restrict" })
     .notNull(),
@@ -209,6 +217,7 @@ export const houses = pgTable("houses", {
 
 export const uploadedImages = pgTable("uploaded_images", {
   id: uuid("id").defaultRandom().primaryKey(),
+  publicId: text("public_id").notNull(),
   url: text("url").notNull(),
   status: text("status").default("TEMP"),
 
@@ -225,6 +234,8 @@ export const uploadedImages = pgTable("uploaded_images", {
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
+  roles: many(userRoles),
+  houses: many(houses),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -242,10 +253,11 @@ export const accountRelations = relations(account, ({ one }) => ({
 }));
 
 export const houseRelations = relations(houses, ({ one, many }) => ({
-  // agent: one(user, {
-  //   fields: [house.agentId],
-  //   references: [user.id],
-  // }),
+  agent: one(user, {
+    fields: [houses.agentId],
+    references: [user.id],
+  }),
+
   houseType: one(houseTypes, {
     fields: [houses.houseTypeId],
     references: [houseTypes.id],
@@ -276,16 +288,14 @@ export const mediaRelations = relations(uploadedImages, ({ one }) => ({
   }),
 }));
 
-export const userRelation = relations(user, ({ many }) => ({
-  roles: many(userRoles),
-  houses: many(houses),
-}));
-
 export const schema = {
   user,
   account,
   session,
   verification,
+  roles,
+  userRoles,
+  roleInviteTokens,
   houseTypes,
   houses,
   uploadedImages,

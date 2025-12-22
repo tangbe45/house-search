@@ -69,7 +69,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
 
     if (success) {
       toast.success(message);
-      router.push("/auth/login");
+      router.push("/auth/email-verification");
     } else {
       toast.error(message);
     }

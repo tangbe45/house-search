@@ -20,15 +20,14 @@ import Link from "next/link";
 import { CopyButton } from "../web/copy-button";
 import { isExpired } from "@/lib/is-expired";
 
-interface Property {
+interface housesProps {
   id: string;
   title: string;
   location: string;
   price: number;
-  image: StaticImageData;
+  image: string | StaticImageData;
   status: string;
-  forRent?: boolean;
-  forSale?: boolean;
+  createdAt: string;
 }
 
 interface InviteToken {
@@ -45,30 +44,9 @@ interface Agent {
   email: string;
 }
 
-export default function AgentDashboard() {
+export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
   // Dummy states (replace with real data fetching)
-  const [properties, setProperties] = useState<Property[]>([
-    {
-      id: "1",
-      title: "Modern Apartment",
-      location: "Douala",
-      price: 450,
-      status: "AVAILABLE",
-      image: imageUrl,
-      forSale: true,
-      forRent: false,
-    },
-    {
-      id: "2",
-      title: "Villa Beachside",
-      location: "Limbe",
-      price: 1200,
-      status: "RENTED",
-      image: imageUrl,
-      forSale: false,
-      forRent: true,
-    },
-  ]);
+  const [properties, setProperties] = useState<housesProps[]>(houses);
 
   const [tokens, setTokens] = useState<InviteToken[]>([
     {
@@ -116,12 +94,12 @@ export default function AgentDashboard() {
     toast.info("Token copied!");
   };
 
-  const updateStatus = (id: string, status: Property["status"]) => {
-    setProperties((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status } : p))
-    );
-    toast.success(`Property status updated to ${status}`);
-  };
+  // const updateStatus = (id: string, status: Property["status"]) => {
+  //   setProperties((prev) =>
+  //     prev.map((p) => (p.id === id ? { ...p, status } : p))
+  //   );
+  //   toast.success(`Property status updated to ${status}`);
+  // };
 
   const [invitedAgents, setInvitedAgents] = useState<Agent[]>([
     { id: "1", name: "John Doe", email: "user1@example.com" },
