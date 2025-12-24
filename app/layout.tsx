@@ -24,7 +24,7 @@ export default function RootLayout({
         >
           <main className="max-w-7xl mx-auto w-full px-4 md:px-6 lg:px-8">
             {children}
-            <Toaster />
+            <Toaster position="top-right" />
           </main>
         </ThemeProvider>
       </body>

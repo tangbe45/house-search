@@ -1,7 +1,7 @@
 "use server";
 
-import { db } from "@/db/drizzle";
-import { houses, subdivisions, uploadedImages } from "@/db/schema";
+import { db } from "@/server/db/drizzle";
+import { houses, subdivisions, uploadedImages } from "@/server/db/schema";
 import { sql, eq } from "drizzle-orm";
 import { format } from "date-fns";
 

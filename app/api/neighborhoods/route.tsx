@@ -1,5 +1,5 @@
-import { db } from "@/db/drizzle";
-import { neighborhoods } from "@/db/schema";
+import { db } from "@/server/db/drizzle";
+import { neighborhoods } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(req: Request) {

@@ -1,7 +1,7 @@
 "use server";
 
-import { db } from "@/db/drizzle";
-import { roles, user, userRoles } from "@/db/schema";
+import { db } from "@/server/db/drizzle";
+import { roles, user, userRoles } from "@/server/db/schema";
 import { auth } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/dist/server/api-utils";

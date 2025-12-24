@@ -662,15 +662,18 @@ export function AddHouseForm() {
         </div>
         <div className="flex justify-end gap-x-4">
           <Button disabled={form.formState.isSubmitting} type="submit">
-            {form.formState.isSubmitting
-              ? `${(
-                  <LoaderIcon
-                    role="status"
-                    aria-label="Loading"
-                    className={cn("size-4 animate-spin")}
-                  />
-                )} Submitting...`
-              : "Submit"}
+            {form.formState.isSubmitting ? (
+              <span className="flex items-center gap-x-2">
+                <LoaderIcon
+                  role="status"
+                  aria-label="Loading"
+                  className="size-4 animate-spin"
+                />
+                Submitting...
+              </span>
+            ) : (
+              "Create"
+            )}
           </Button>
           <Button
             variant={"destructive"}

@@ -1,13 +1,12 @@
 "use server";
 
 // import cloudinary from "@/lib/cloudinary";
-import { db } from "@/db/drizzle";
+import { db } from "@/server/db/drizzle";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { houses, uploadedImages } from "@/db/schema";
+import { houses, uploadedImages } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
-import { create } from "domain";
-import { id } from "zod/v4/locales";
+import { HouseService } from "@/server/services/house.service";
 
 export async function getAgentHouses() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -56,6 +55,14 @@ export async function getAgentHouses() {
   console.log(processedHousesWithImages);
 
   return processedHousesWithImages;
+}
+
+export async function fetchHouseForEditAction(houseId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session) throw new Error("Not authenticated");
+
+  return HouseService.getHouseForEdit(houseId, session.user.id);
 }
 
 // export async function updateHouse(formData: FormData) {

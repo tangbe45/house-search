@@ -195,9 +195,12 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
                     {property.status}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost">
+                    <Link
+                      href={`dashboard/houses/${property.id}/edit`}
+                      className={`${buttonVariants({ variant: "ghost" })}`}
+                    >
                       <Pencil size={4} />
-                    </Button>
+                    </Link>
                     <Button variant="ghost">
                       <Trash2 size={4} />
                     </Button>

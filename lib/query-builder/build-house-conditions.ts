@@ -1,4 +1,4 @@
-import { houses } from "@/db/schema";
+import { houses } from "@/server/db/schema";
 import { eq, gt, lt } from "drizzle-orm";
 
 export function buildHouseConditions(params: Record<string, any>) {

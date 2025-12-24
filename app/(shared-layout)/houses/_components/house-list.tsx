@@ -68,6 +68,7 @@ export default function HouseList() {
                       bedrooms={house.bedrooms}
                       bathrooms={house.bathrooms}
                       hasFence={house.hasFence}
+                      hasWell={house.hasWell}
                       hasInternalToilet={house.hasInternalToilet}
                       imageUrl={house.imageUrl ?? url}
                     />

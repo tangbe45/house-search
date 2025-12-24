@@ -186,7 +186,7 @@ export const houses = pgTable("houses", {
   status: houseStatusEnum("status").default("AVAILABLE").notNull(),
 
   agentId: text("agent_id")
-    .references(() => user.id, { onDelete: "set null" })
+    .references(() => user.id, { onDelete: "cascade" })
     .notNull(),
 
   houseTypeId: uuid("house_type_id")
@@ -278,10 +278,10 @@ export const houseRelations = relations(houses, ({ one, many }) => ({
     fields: [houses.neighborhoodId],
     references: [neighborhoods.id],
   }),
-  medias: many(uploadedImages),
+  images: many(uploadedImages),
 }));
 
-export const mediaRelations = relations(uploadedImages, ({ one }) => ({
+export const uploadedImagesRelations = relations(uploadedImages, ({ one }) => ({
   house: one(houses, {
     fields: [uploadedImages.houseId],
     references: [houses.id],
@@ -299,7 +299,8 @@ export const schema = {
   houseTypes,
   houses,
   uploadedImages,
-  mediaRelations,
+  houseRelations,
+  uploadedImagesRelations,
   regions,
   divisions,
   subdivisions,

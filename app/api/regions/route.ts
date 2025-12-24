@@ -1,8 +1,9 @@
-import { db } from "@/db/drizzle";
+import { db } from "@/server/db/drizzle";
 
 export async function GET(req: Request) {
   try {
     const regions = await db.query.regions.findMany();
+
     return new Response(JSON.stringify(regions));
   } catch (error) {
     const e = error as Error;

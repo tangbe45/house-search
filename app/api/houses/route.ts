@@ -1,16 +1,20 @@
 // app/api/houses/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-import { db } from "@/db/drizzle";
-import { houses, roles, uploadedImages, userRoles } from "@/db/schema";
+import { db } from "@/server/db/drizzle";
+import { houses, roles, uploadedImages, userRoles } from "@/server/db/schema";
 import { houseCreateSchema } from "@/lib/validation/zod-schemas";
 import { buildHouseConditions } from "@/lib/query-builder/build-house-conditions";
-import { and, sql, eq, desc, is } from "drizzle-orm";
+import { and, sql, eq, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import "dotenv/config";
 import { headers } from "next/headers";
-import { he } from "zod/v4/locales";
 import z from "zod";
+import { deleteFromCloudinary } from "@/lib/cloudinary/cloudinary-server";
+
+/* ──────────────────────────────────────────────── */
+/* 1. GET                                          */
+/* ──────────────────────────────────────────────── */
 
 export async function GET(req: Request) {
   const {
@@ -22,16 +26,16 @@ export async function GET(req: Request) {
     bathrooms,
     hasFence,
     hasInternalToilet,
+    hasWell,
   } = houses;
   const url = new URL(req.url);
   const params = Object.fromEntries(url.searchParams.entries());
-  console.log(params);
+
   const page = Math.max(1, Number(params.page || 1));
   const limit = Math.min(100, Number(params.limit || 12));
   const skip = (page - 1) * limit;
 
   const conditions = buildHouseConditions(params);
-  console.log(conditions);
 
   const [housesResult, total] = await Promise.all([
     db
@@ -44,6 +48,7 @@ export async function GET(req: Request) {
         bathrooms,
         hasFence,
         hasInternalToilet,
+        hasWell,
 
         images: sql`
             COALESCE(
@@ -79,6 +84,7 @@ export async function GET(req: Request) {
       bedrooms: item.bedrooms,
       bathrooms: item.bathrooms,
       hasFence: item.hasFence,
+      hasWell: item.hasWell,
       hasInternalToilet: item.hasInternalToilet,
       imageUrl: (images as Array<{ id: string; url: string }>)[0]?.url,
     };
@@ -95,11 +101,20 @@ export async function GET(req: Request) {
   );
 }
 
+/* ──────────────────────────────────────────────── */
+/* 2. POST                                          */
+/* ──────────────────────────────────────────────── */
 export async function POST(req: NextRequest) {
+  const body = await req.json();
   try {
+    console.log(body);
     // 0. Authenticate user
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
+      body.images.map((img: { url: string; publicId: string }) => {
+        deleteFromCloudinary(img.publicId);
+      });
+
       return NextResponse.json(
         { success: false, message: "Unauthorized" },
         { status: 401 }
@@ -117,6 +132,10 @@ export async function POST(req: NextRequest) {
     );
 
     if (isAuthorized === false) {
+      body.images.map((img: { url: string; publicId: string }) => {
+        deleteFromCloudinary(img.publicId);
+      });
+
       return NextResponse.json(
         { success: false, message: "Forbidden" },
         { status: 403 }
@@ -125,15 +144,19 @@ export async function POST(req: NextRequest) {
 
     const ownerId = session.user.id;
 
-    // 1. Parse JSON
-    const body = await req.json();
-    console.log(body);
-
     // 2. Validate payload
     const parsed = houseCreateSchema.safeParse(body);
     if (!parsed.success) {
+      body.images.map((img: { url: string; publicId: string }) => {
+        deleteFromCloudinary(img.publicId);
+      });
+
       return NextResponse.json(
-        { error: "Invalid input", issues: z.treeifyError(parsed.error) },
+        {
+          success: false,
+          message: "Invalid input",
+          issues: z.treeifyError(parsed.error),
+        },
         { status: 400 }
       );
     }
@@ -208,28 +231,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-export async function PUT(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-
-  console.log(session);
-
-  if (!session) {
-    return NextResponse.json(
-      { success: false, message: "Unauthorized" },
-      { status: 401 }
-    );
-  }
-
-  return NextResponse.json({ user: session.user });
-
-  // if (session.user.role !== "agent") {
-  //   throw new Error("Forbidden");
-  // }
-  // To be implemented
-  // return NextResponse.json(
-  //   { success: false, message: "Not implemented" },
-  //   { status: 501 }
-  // );
 }

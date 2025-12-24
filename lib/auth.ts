@@ -1,11 +1,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@/db/drizzle";
+import { db } from "@/server/db/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { Resend } from "resend";
 import ForgotPasswordEmail from "@/emails/reset-password";
 import VerifyEmail from "@/emails/verify-email";
-import { schema } from "@/db/schema";
+import { schema } from "@/server/db/schema";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

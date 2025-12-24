@@ -170,6 +170,7 @@ type HouseCardProps = {
   bathrooms: number;
   hasFence: boolean;
   hasInternalToilet: boolean;
+  hasWell: boolean;
   imageUrl: string;
 };
 
@@ -181,6 +182,7 @@ export function HouseCard({
   bathrooms,
   hasFence,
   hasInternalToilet,
+  hasWell,
   imageUrl,
 }: HouseCardProps) {
   return (
@@ -196,8 +198,8 @@ export function HouseCard({
         />
 
         {/* Price badge */}
-        <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1 text-sm font-semibold text-white backdrop-blur">
-          {price}
+        <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-3 py-1 text-sm font-semibold text-red-500 backdrop-blur">
+          {price} CFA
         </span>
       </div>
 
@@ -231,6 +233,7 @@ export function HouseCard({
         <div className="flex flex-wrap gap-2 pt-2">
           <FeatureBadge label="Fence" enabled={hasFence} />
           <FeatureBadge label="Internal Toilet" enabled={hasInternalToilet} />
+          <FeatureBadge label="Well" enabled={hasWell} />
         </div>
       </div>
     </div>

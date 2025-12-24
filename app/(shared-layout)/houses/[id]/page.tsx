@@ -13,7 +13,7 @@ interface HousePageProps {
 export default async function HouseDetailsPage({ params }: HousePageProps) {
   // Replace with real DB call
   const { id } = await params;
-  const houseData = await getHouseById(id);
+  const houseData: any = await getHouseById(id);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">

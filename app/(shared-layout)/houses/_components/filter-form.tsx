@@ -75,13 +75,11 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
 
   function applyFilters() {
     const params = new URLSearchParams();
-    if (filter.search) params.set("search", filter.search);
+
     if (filter.houseType) params.set("houseType", filter.houseType);
     if (filter.purpose) params.set("purpose", filter.purpose);
     if (filter.minPrice) params.set("minPrice", filter.minPrice);
     if (filter.maxPrice) params.set("maxPrice", filter.maxPrice);
-    if (filter.bedrooms) params.set("bedrooms", filter.bedrooms);
-    if (filter.bathrooms) params.set("bathrooms", filter.bathrooms);
     if (filter.hasInternalToilet)
       params.set("hasInternalToilet", String(filter.hasInternalToilet));
     if (filter.hasParking) params.set("hasParking", String(filter.hasParking));
