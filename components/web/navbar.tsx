@@ -114,6 +114,7 @@ export default function Navbar() {
           <div className="flex flex-col space-y-4">
             {navItems.map((item) => (
               <Link
+                onClick={toggleMenu}
                 key={item.name}
                 href={item.href}
                 className={`${buttonVariants({
@@ -126,12 +127,17 @@ export default function Navbar() {
           </div>
           <div className="flex flex-col space-y-4">
             <Link
+              onClick={toggleMenu}
               className={buttonVariants({ variant: "outline" })}
               href="/auth/login"
             >
               Login
             </Link>
-            <Link className={buttonVariants()} href="/auth/sign-up">
+            <Link
+              onClick={toggleMenu}
+              className={buttonVariants()}
+              href="/auth/sign-up"
+            >
               Sign Up
             </Link>
           </div>
