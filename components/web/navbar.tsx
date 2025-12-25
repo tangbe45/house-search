@@ -110,7 +110,7 @@ export default function Navbar() {
             />
           </svg>
         </button>
-        <div className="flex flex-col justify-between h-[calc(100vh-90px)]">
+        <div className="flex flex-col justify-between h-[calc(100vh-120px)]">
           <div className="flex flex-col space-y-4">
             {navItems.map((item) => (
               <Link
