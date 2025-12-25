@@ -7,7 +7,7 @@ import { nextCookies } from "better-auth/next-js";
 import { Resend } from "resend";
 import ForgotPasswordEmail from "@/emails/reset-password";
 import VerifyEmail from "@/emails/verify-email";
-import { roles, schema, userRoles } from "@/server/db/schema";
+import { roles, schema, userRoles, user } from "@/server/db/schema";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -50,6 +50,32 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+    },
+    // github: {
+    //   clientId: process.env.null,
+    //   clientSecret: process.env.null,
+    // },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (newUser) => {
+          const userCount = await db.$count(user);
+
+          const targetRoleName = userCount <= 1 ? "admin" : "basic-user";
+
+          const roleRecord = await db.query.roles.findFirst({
+            where: eq(roles.name, targetRoleName),
+          });
+
+          if (roleRecord) {
+            await db.insert(userRoles).values({
+              userId: newUser.id,
+              roleId: roleRecord.id,
+            });
+          }
+        },
+      },
     },
   },
   database: drizzleAdapter(db, {

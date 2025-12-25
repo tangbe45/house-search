@@ -60,6 +60,13 @@ export function LoginForm({
     });
   };
 
+  const signInWithGitHub = async () => {
+    await authClient.signIn.social({
+      provider: "github",
+      callbackURL: "/dashboard",
+    });
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     const { success, message } = await signIn(values);
