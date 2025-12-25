@@ -186,7 +186,7 @@ export function HouseCard({
   imageUrl,
 }: HouseCardProps) {
   return (
-    <div className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg dark:border-white/10 dark:bg-zinc-900 dark:hover:shadow-black/40">
+    <div className="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg dark:border-white/10 dark:bg-zinc-900 dark:hover:shadow-black/40 max-w-md mx-auto">
       {/* Image */}
       <div className="relative h-52 sm:h-56 md:h-64 overflow-hidden">
         <CldImage
