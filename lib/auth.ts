@@ -1,11 +1,13 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { customSession } from "better-auth/plugins";
 import { db } from "@/server/db/drizzle";
+import { eq } from "drizzle-orm";
 import { nextCookies } from "better-auth/next-js";
 import { Resend } from "resend";
 import ForgotPasswordEmail from "@/emails/reset-password";
 import VerifyEmail from "@/emails/verify-email";
-import { schema } from "@/server/db/schema";
+import { roles, schema, userRoles } from "@/server/db/schema";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -54,5 +56,24 @@ export const auth = betterAuth({
     provider: "pg",
     schema,
   }),
-  plugins: [nextCookies()],
+  plugins: [
+    customSession(async ({ user, session }) => {
+      const userRolesData = await db
+        .select({ roleName: roles.name })
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(eq(userRoles.userId, user.id));
+
+      const roleNames = userRolesData.map((r) => r.roleName);
+
+      return {
+        user: {
+          ...user,
+          roles: roleNames,
+        },
+        session,
+      };
+    }),
+    nextCookies(),
+  ],
 });
