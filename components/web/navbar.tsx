@@ -95,7 +95,7 @@ export default function Navbar() {
           isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <button onClick={toggleMenu} className="mb-4 text-gray-500">
+        <button onClick={toggleMenu} className=" text-gray-500">
           <svg
             className="h-8 w-8"
             fill="none"
@@ -110,7 +110,7 @@ export default function Navbar() {
             />
           </svg>
         </button>
-        <div className="flex flex-col justify-between h-[calc(100vh-120px)]">
+        <div className="flex flex-col justify-between h-full overflow-y-auto p-6 shadow-xl">
           <div className="flex flex-col space-y-4">
             {navItems.map((item) => (
               <Link
