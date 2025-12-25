@@ -86,7 +86,7 @@ export function LoginForm({
       <CardHeader className="text-center">
         <CardTitle className="text-xl">Welcome back</CardTitle>
         <CardDescription>
-          Login with your Apple or Google account
+          Login with your Github or Google account
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -94,14 +94,19 @@ export function LoginForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             <FieldGroup>
               <Field>
-                <Button variant="outline" type="button">
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={signInWithGitHub}
+                >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path
-                      d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
+                      fill-rule="evenodd"
+                      d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.43 9.78 8.24 11.39.6.11.82-.26.82-.58 0-.29-.01-1.2-.01-2.21-3.53.77-4.28-1.7-4.28-1.7-.58-1.47-1.42-1.86-1.42-1.86-1.16-.79.09-.77.09-.77 1.28.09 1.95 1.32 1.95 1.32 1.14 1.94 2.99 1.38 3.72 1.05.11-.82.44-1.38.8-1.7-2.81-.32-5.75-1.4-5.75-6.22 0-1.37.49-2.49 1.3-3.37-.13-.32-.56-1.59.13-3.32 0 0 1.05-.33 3.43 1.28.99-.27 2.05-.4 3.12-.4 1.07 0 2.14.13 3.12.4 2.37-1.61 3.43-1.28 3.43-1.28.69 1.73.26 3.01.13 3.32.81.88 1.3 2 1.3 3.37 0 4.83-2.95 5.9-5.77 6.22.45.38.86 1.15.86 2.32 0 1.68-.01 3.04-.01 3.45 0 .32.22.7.83.58C20.57 21.77 24 17.31 24 12c0-6.63-5.37-12-12-12z"
                       fill="currentColor"
                     />
                   </svg>
-                  Login with Apple
+                  Login with Github
                 </Button>
                 <Button
                   variant="outline"
