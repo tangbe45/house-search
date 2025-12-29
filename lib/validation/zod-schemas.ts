@@ -1,4 +1,9 @@
 import z from "zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { roleInviteTokens } from "@/server/db/schema";
+
+/* ---------- SELECT ---------- */
+export const selectInviteSchema = createSelectSchema(roleInviteTokens);
 
 /* ---------- CREATE ---------- */
 export const houseCreateSchema = z.object({
@@ -30,10 +35,23 @@ export const houseCreateSchema = z.object({
     .optional(),
 });
 
+export const createInviteTokenSchema = createInsertSchema(roleInviteTokens, {
+  targetEmail: (s) => z.email(),
+  expiresAt: (s) => z.coerce.date(),
+}).omit({
+  id: true,
+  createdAt: true,
+  createdBy: true,
+  redeemedAt: true,
+});
+
 /* ---------- UPDATE ---------- */
 export const houseUpdateSchema = houseCreateSchema.partial().extend({
   id: z.uuid(),
 });
+
+export const updateInviteTokenSchema =
+  createInsertSchema(roleInviteTokens).partial();
 
 /* ---------- FILTER ---------- */
 export const houseFilterSchema = z.object({

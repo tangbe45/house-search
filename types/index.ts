@@ -1,7 +1,10 @@
 import {
+  createInviteTokenSchema,
   houseCreateSchema,
   houseFilterSchema,
   houseUpdateSchema,
+  selectInviteSchema,
+  updateInviteTokenSchema,
 } from "@/lib/validation/zod-schemas";
 import z from "zod";
 
@@ -44,3 +47,8 @@ export type LocationData = {
   subdivisions: Subdivision[] | "";
   neighborhoods: Neighborhood[] | "";
 };
+
+/* ---------- INVITE TOKEN ---------- */
+export type InviteToken = z.infer<typeof selectInviteSchema>;
+export type CreateInvitToken = z.infer<typeof createInviteTokenSchema>;
+export type UpdateInviteToken = z.infer<typeof updateInviteTokenSchema>;

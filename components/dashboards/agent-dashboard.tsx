@@ -8,8 +8,8 @@ import {
   Pencil,
   SquareUser,
   PlusCircle,
-  Delete,
   LoaderIcon,
+  UserPlus,
 } from "lucide-react";
 import {
   Table,
@@ -36,8 +36,20 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { useRouter } from "next/navigation";
-import { Label } from "../ui/label";
 import { Input } from "../ui/input";
+import { CreateInvitToken } from "@/types";
+import { createInviteTokenSchema } from "@/lib/validation/zod-schemas";
+import { FieldValues, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "../ui/form";
+import { GenerateInviteTokenForm } from "../forms/generate-invite-token-form";
 
 interface housesProps {
   id: string;
@@ -52,7 +64,7 @@ interface housesProps {
 interface InviteToken {
   id: string;
   token: string;
-  email: string;
+  targetEmail: string;
   expiresAt: string;
   used: boolean;
 }
@@ -63,29 +75,19 @@ interface Agent {
   email: string;
 }
 
-export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
+export default function AgentDashboard({
+  houses,
+  tokens,
+}: {
+  houses: housesProps[];
+  tokens: InviteToken[];
+}) {
   // Dummy states (replace with real data fetching)
   //const [properties, setProperties] = useState<housesProps[]>(houses);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
-
-  const [tokens, setTokens] = useState<InviteToken[]>([
-    {
-      id: "1",
-      token: "AGENT-123ABC",
-      email: "user1@example.com",
-      expiresAt: "2025-18-01T23:59:59Z",
-      used: false,
-    },
-    {
-      id: "2",
-      token: "AGENT-XYZ456",
-      email: "user2@example.com",
-      expiresAt: "2025-11-12T23:59:59Z",
-      used: true,
-    },
-  ]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const deleteProperty = async (id: string) => {
     setIsProcessing(true);
@@ -106,23 +108,14 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
     setIsProcessing(false);
   };
 
-  const generateToken = (email: string) => {
-    if (!email) return toast.error("Enter a registered user email");
-    const newToken = `AGENT-${Math.random()
-      .toString(36)
-      .substring(2, 8)
-      .toUpperCase()}`;
-    const newEntry = {
-      id: Math.random().toString(),
-      token: newToken,
-      email,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .slice(0, 10),
-      used: false,
-    };
-    setTokens((prev) => [newEntry, ...prev]);
+  const onSubmit = (formData: CreateInvitToken) => {
+    console.log(formData);
+
     toast.success("Invitation token generated!");
+  };
+
+  const onFormError = (errors: FieldValues) => {
+    console.log("Validation Errors:", errors);
   };
 
   const copyToken = (token: string) => {
@@ -142,7 +135,7 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
   ]);
 
   const deleteToken = (id: string) => {
-    setTokens((prev) => prev.filter((t) => t.id !== id));
+    //setTokens((prev) => prev.filter((t) => t.id !== id));
     toast.warning("Token revoked");
   };
 
@@ -272,14 +265,15 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
                               "Delete"
                             )}
                           </Button>
-
-                          <Button
-                            variant={"outline"}
-                            onClick={() => setIsOpen(false)}
-                            disabled={isProcessing}
-                          >
-                            Cancel
-                          </Button>
+                          <DialogClose>
+                            <Button
+                              variant={"outline"}
+                              type="button"
+                              disabled={isProcessing}
+                            >
+                              Cancel
+                            </Button>
+                          </DialogClose>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
@@ -298,39 +292,26 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
             <h2 className="text-2xl font-bold">Invitation Token</h2>
           </div>
           <div className="flex justify-end mb-2">
-            <Dialog>
-              <form>
-                <DialogTrigger asChild>
-                  <Button size="sm" className={`flex items-center gap-2`}>
-                    <SquareUser className="h-4 w-4" /> Generate Invitation Token
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-106.25">
-                  <DialogHeader>
-                    <DialogTitle>Edit profile</DialogTitle>
-                    <DialogDescription>
-                      Make changes to your profile here. Click save when
-                      you&apos;re done.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4">
-                    <div className="grid gap-3">
-                      <Label htmlFor="name-1">Target Email</Label>
-                      <Input
-                        id="name-1"
-                        name="email"
-                        defaultValue="john@gmail.com"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit">Save changes</Button>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </form>
+            <Dialog
+              open={isGeneratorOpen}
+              onOpenChange={() => setIsGeneratorOpen((prev) => !prev)}
+            >
+              <DialogTrigger asChild>
+                <Button size="sm" className={`flex items-center gap-2`}>
+                  <SquareUser className="h-4 w-4" /> Generate Invitation Token
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add User</DialogTitle>
+                  <DialogDescription>
+                    Add a new user to the database
+                  </DialogDescription>
+                </DialogHeader>
+                <GenerateInviteTokenForm
+                  onSetIsGeneratorOpen={(value) => setIsGeneratorOpen(value)}
+                />
+              </DialogContent>
             </Dialog>
           </div>
           <Table>
@@ -346,7 +327,9 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
             <TableBody>
               {tokens.map((token) => (
                 <TableRow key={token.id}>
-                  <TableCell className="font-medium">{token.email}</TableCell>
+                  <TableCell className="font-medium">
+                    {token.targetEmail}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-sm truncate max-w-45">

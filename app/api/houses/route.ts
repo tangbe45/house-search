@@ -1,15 +1,10 @@
 // app/api/houses/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
-import { db } from "@/server/db/drizzle";
-import { houses, roles, uploadedImages, userRoles } from "@/server/db/schema";
-import { houseCreateSchema } from "@/lib/validation/zod-schemas";
 import { buildHouseConditions } from "@/lib/query-builder/build-house-conditions";
-import { and, sql, eq, desc } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import "dotenv/config";
 import { headers } from "next/headers";
-import z from "zod";
 import { deleteFromCloudinary } from "@/lib/cloudinary/cloudinary-server";
 import { HouseService } from "@/server/services/house.service";
 

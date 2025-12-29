@@ -31,10 +31,15 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
+    .notNull(),
+
+  roleId: uuid("role_id")
+    .references(() => roles.id, { onDelete: "restrict" })
     .notNull(),
 });
 
@@ -103,27 +108,13 @@ export const roles = pgTable("roles", {
   description: text("description"),
 });
 
-export const userRoles = pgTable(
-  "user_roles",
-  {
-    userId: text("user_id")
-      .references(() => user.id, { onDelete: "cascade" })
-      .notNull(),
-    roleId: uuid("role_id")
-      .references(() => roles.id, { onDelete: "cascade" })
-      .notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.userId, t.roleId] })]
-);
-
 export const roleInviteTokens = pgTable("role_invite_tokens", {
   id: uuid("id").defaultRandom().primaryKey(),
 
   token: text("token").notNull().unique(),
-  createdBy: uuid("created_by").notNull(),
+  createdBy: text("created_by").notNull(),
 
   targetEmail: text("target_email").notNull(),
-  role: text("role").notNull(), // landlord for now
 
   used: boolean("used").notNull().default(false),
   redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
@@ -231,11 +222,14 @@ export const uploadedImages = pgTable("uploaded_images", {
 });
 
 // relations
-export const userRelations = relations(user, ({ many }) => ({
+export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
-  roles: many(userRoles),
   houses: many(houses),
+  role: one(roles, {
+    fields: [user.roleId],
+    references: [roles.id],
+  }),
 }));
 
 export const sessionRelations = relations(session, ({ one }) => ({
@@ -262,22 +256,27 @@ export const houseRelations = relations(houses, ({ one, many }) => ({
     fields: [houses.houseTypeId],
     references: [houseTypes.id],
   }),
+
   region: one(regions, {
     fields: [houses.regionId],
     references: [regions.id],
   }),
+
   division: one(divisions, {
     fields: [houses.divisionId],
     references: [divisions.id],
   }),
+
   subdivision: one(subdivisions, {
     fields: [houses.subdivisionId],
     references: [subdivisions.id],
   }),
+
   neighborhood: one(neighborhoods, {
     fields: [houses.neighborhoodId],
     references: [neighborhoods.id],
   }),
+
   images: many(uploadedImages),
 }));
 
@@ -294,7 +293,6 @@ export const schema = {
   session,
   verification,
   roles,
-  userRoles,
   roleInviteTokens,
   houseTypes,
   houses,

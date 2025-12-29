@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { houses, roles, uploadedImages, userRoles } from "@/server/db/schema";
-import { and, eq, exists, inArray, notInArray } from "drizzle-orm";
 import { deleteFromCloudinary } from "@/lib/cloudinary/cloudinary-server";
 import { auth } from "@/lib/auth"; // your auth helper
 import { headers } from "next/headers";
-import { db } from "@/server/db/drizzle";
-import { houseUpdateSchema } from "@/lib/validation/zod-schemas";
-import z from "zod";
 import { HouseService } from "@/server/services/house.service";
 
 export async function PUT(

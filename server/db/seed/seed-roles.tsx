@@ -10,7 +10,7 @@ type RoleInput = {
 };
 
 async function seedRoles() {
-  console.log("🌍 Seeding regions...");
+  console.log("🌍 Seeding roles...");
 
   const filePath = path.join(__dirname, "roles", "roles.json");
   const file = await fs.readFile(filePath, "utf-8");
@@ -23,7 +23,7 @@ async function seedRoles() {
     });
 
     if (existing) {
-      console.log(`⚠️  Skipped: ${roles.name}`);
+      console.log(`⚠️  Skipped: ${item.name}`);
       continue;
     }
 
@@ -31,7 +31,7 @@ async function seedRoles() {
       name: item.name,
     });
 
-    console.log(`✅ Inserted: ${roles.name}`);
+    console.log(`✅ Inserted: ${item.name}`);
   }
 
   console.log("🎉 Roles seeding complete");

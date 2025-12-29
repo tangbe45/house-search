@@ -6,6 +6,12 @@
     "name": "agent"
   },
   {
+    "name": "provider"
+  },
+  {
+    "name": "partner"
+  },
+  {
     "name": "basic-user"
   }
 ]

@@ -1,0 +1,56 @@
+import { CreateInvitToken } from "@/types";
+import { InviteTokenRepository } from "../repositories/invite-token.repository";
+
+export const InviteTokenService = {
+  //Query agents tokens
+  async getAgentTokens(user: { id: string; role: string }) {
+    try {
+      const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
+
+      if (!allowedRoles.includes(user.role)) {
+        throw new Error("Forbidden: Your account type cannot create listings.");
+      }
+
+      const result = await InviteTokenRepository.findManyById(user.id);
+
+      const token = result.map((item) => {
+        return {
+          id: item.id,
+          token: item.token,
+          expiresAt: item.expiresAt,
+          targetEmail: item.targetEmail,
+          status: item.used,
+        };
+      });
+
+      return token;
+    } catch (error) {
+      console.log(`Error: ${error}`);
+      const err = error as Error;
+      return {
+        success: false,
+        message: err.message,
+      };
+    }
+  },
+
+  async createAgentToken(
+    user: { id: string; role: string },
+    data: CreateInvitToken
+  ) {
+    try {
+      const allowedRoles = ["admin", "agent", "partner", "provider"];
+
+      if (!allowedRoles.includes(user.role)) {
+        throw new Error("Forbidden: Your account type cannot create listings.");
+      }
+
+      const result = InviteTokenRepository.create(user.id, data);
+
+      return result;
+    } catch (error) {
+      console.log(`Error: ${error}`);
+      const err = error as Error;
+    }
+  },
+};

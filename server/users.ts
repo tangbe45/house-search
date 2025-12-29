@@ -1,9 +1,6 @@
 "use server";
 
-import { db } from "@/server/db/drizzle";
-import { roles, user, userRoles } from "@/server/db/schema";
 import { auth } from "@/lib/auth";
-import { eq } from "drizzle-orm";
 
 export const signIn = async ({
   email,
