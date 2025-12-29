@@ -5,6 +5,8 @@ import {
 } from "@/lib/validation/zod-schemas";
 import z from "zod";
 
+export type HouseStatus = "AVAILABLE" | "RENTED" | "SOLD";
+
 export type LoadSchema = { id: string; name: string };
 
 export type HouseCreateInput = z.infer<typeof houseCreateSchema>;

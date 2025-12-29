@@ -11,67 +11,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { HouseFilter, HouseType, LocationData } from "@/types";
+import { HouseFilter, HouseType, LoadSchema, LocationData } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 
-export const initializeHouseFilter = {
-  houseType: "",
-  minPrice: "",
-  maxPrice: "",
-  bedrooms: "",
-  bathrooms: "",
-  hasInternalToilet: false,
-  hasWell: false,
-  hasParking: false,
-  hasFence: false,
-  hasBalcony: false,
-  forRent: undefined,
-  forSale: undefined,
-  region: "",
-  division: "",
-  subdivision: "",
-  neighborhood: "",
-};
-
 type FilterFormProps = {
+  filter: HouseFilter;
+  location: LocationData;
+  houseTypes: HouseType[];
+  resetForm: () => void;
+  onSetFilter: (key: string, value: string | boolean) => void;
+  onSetLocation: (key: string, value: LoadSchema[]) => void;
   onClose: () => void;
 };
 
-const FilterForm = ({ onClose }: FilterFormProps) => {
+const FilterForm = ({
+  filter,
+  location,
+  houseTypes,
+  onSetFilter,
+  onSetLocation,
+  resetForm,
+  onClose,
+}: FilterFormProps) => {
   const router = useRouter();
-
-  const [houseTypes, setHouseTypes] = useState<HouseType[]>([]);
-  const [filter, setFilter] = useState<HouseFilter>(initializeHouseFilter);
-  const [location, setLocation] = useState<LocationData>({
-    regions: "",
-    divisions: "",
-    subdivisions: "",
-    neighborhoods: "",
-  });
-
-  useEffect(() => {
-    async function loadFilters() {
-      const [types_result, regions_result] = await Promise.all([
-        fetch("/api/house-types"),
-        fetch("/api/regions"),
-      ]);
-
-      const regions = await regions_result.json();
-      const types = await types_result.json();
-      console.log(regions);
-
-      setLocation({ ...location, regions: regions });
-      setHouseTypes(types);
-    }
-    const time = setTimeout(() => {
-      loadFilters();
-    }, 1000);
-
-    return () => clearTimeout(time);
-  }, []);
 
   function applyFilters() {
     const params = new URLSearchParams();
@@ -84,6 +49,8 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
       params.set("hasInternalToilet", String(filter.hasInternalToilet));
     if (filter.hasParking) params.set("hasParking", String(filter.hasParking));
     if (filter.hasWell) params.set("hasWell", String(filter.hasWell));
+    if (filter.hasFence) params.set("hasFence", String(filter.hasParking));
+    if (filter.hasBalcony) params.set("hasBalcony", String(filter.hasWell));
     if (filter.region) params.set("region", filter.region);
     if (filter.division) params.set("division", filter.division);
     if (filter.subdivision) params.set("subdivision", filter.subdivision);
@@ -95,35 +62,33 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
   }
 
   const handleChange = async (key: string, value: string | boolean) => {
-    setFilter((prev) => ({ ...prev, [key]: value }));
+    onSetFilter(key, value);
 
     if (key === "region" && typeof value === "string") {
-      console.log(key);
       const result = await fetch(`/api/divisions?regionId=${value}`);
       const divisions = await result.json();
-      console.log(divisions);
-      setLocation(() => ({ ...location, divisions }));
+      onSetLocation("divisions", divisions);
       console.log(result);
     }
 
     if (key === "division" && typeof value === "string") {
       const result = await fetch(`/api/subdivisions?divisionId=${value}`);
       const subdivisions = await result.json();
-      setLocation(() => ({ ...location, subdivisions }));
+      onSetLocation("subdivisions", subdivisions);
       console.log(result);
     }
 
     if (key === "subdivision" && typeof value === "string") {
       const result = await fetch(`/api/neighborhoods?subdivisionId=${value}`);
       const neighborhoods = await result.json();
-      setLocation(() => ({ ...location, neighborhoods }));
+      onSetLocation("neighborhoods", neighborhoods);
       console.log(result);
     }
   };
 
   function clearFilters() {
     router.push(`/houses`);
-    setFilter(initializeHouseFilter);
+    resetForm();
     onClose();
   }
 
@@ -131,7 +96,11 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
     <div className="space-y-4 overflow-y-scroll max-h-[80vh] pr-2">
       <div>
         <Label className="mb-4">Purpose</Label>
-        <RadioGroup defaultValue="FOR_RENT" className="flex gap-4 mt-2">
+        <RadioGroup
+          value={filter.purpose}
+          onValueChange={(value) => handleChange("purpose", value)}
+          className="flex gap-4 mt-2"
+        >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="FOR_RENT" id="for_rent" />
             <Label htmlFor="for_rent">For rent</Label>
@@ -232,12 +201,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
             <Select
               disabled={!location.neighborhoods}
               value={filter.neighborhood}
-              onValueChange={(value) =>
-                setFilter((prev) => ({
-                  ...prev,
-                  neighborhood: value,
-                }))
-              }
+              onValueChange={(value) => handleChange("neighborhoods", value)}
             >
               <SelectTrigger className="max-w-32 sm:max-w-44" size="sm">
                 <SelectValue placeholder="Select neighborhood" />
@@ -288,12 +252,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
             type="number"
             placeholder="e.g. 50000"
             value={filter.minPrice}
-            onChange={(e) =>
-              setFilter((prev) => ({
-                ...prev,
-                minPrice: e.target.value,
-              }))
-            }
+            onChange={(e) => handleChange("minPrice", e.target.value)}
           />
         </div>
         <div className="space-y-1">
@@ -303,12 +262,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
             type="number"
             placeholder="e.g. 300000"
             value={filter.maxPrice}
-            onChange={(e) =>
-              setFilter((prev) => ({
-                ...prev,
-                maxPrice: e.target.value,
-              }))
-            }
+            onChange={(e) => handleChange("maxPrice", e.target.value)}
           />
         </div>
       </div>
@@ -318,12 +272,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
           <Switch
             id="internalToilet"
             checked={filter.hasInternalToilet}
-            onCheckedChange={(val) =>
-              setFilter((prev) => ({
-                ...prev,
-                hasInternalToilet: !filter.hasInternalToilet,
-              }))
-            }
+            onCheckedChange={(val) => handleChange("hasInternalToilet", val)}
           />
           <Label htmlFor="internalToilet">Has Internal Toilet</Label>
         </div>
@@ -331,12 +280,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
           <Switch
             id="well"
             checked={filter.hasWell}
-            onCheckedChange={(val) =>
-              setFilter((prev) => ({
-                ...prev,
-                hasWell: !filter.hasWell,
-              }))
-            }
+            onCheckedChange={(val) => handleChange("hasWell", val)}
           />
           <Label htmlFor="well">Has Well</Label>
         </div>
@@ -344,12 +288,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
           <Switch
             id="parking"
             checked={filter.hasParking}
-            onCheckedChange={(val) =>
-              setFilter((prev) => ({
-                ...prev,
-                hasParking: !filter.hasParking,
-              }))
-            }
+            onCheckedChange={(val) => handleChange("hasParking", val)}
           />
           <Label htmlFor="parking">Has Parking</Label>
         </div>
@@ -357,12 +296,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
           <Switch
             id="fence"
             checked={filter.hasFence}
-            onCheckedChange={(val) =>
-              setFilter((prev) => ({
-                ...prev,
-                hasFence: !filter.hasFence,
-              }))
-            }
+            onCheckedChange={(val) => handleChange("hasFence", val)}
           />
           <Label htmlFor="fence">Is Fenced</Label>
         </div>
@@ -370,12 +304,7 @@ const FilterForm = ({ onClose }: FilterFormProps) => {
           <Switch
             id="balcony"
             checked={filter.hasBalcony}
-            onCheckedChange={(val) =>
-              setFilter((prev) => ({
-                ...prev,
-                hasBalcony: !filter.hasBalcony,
-              }))
-            }
+            onCheckedChange={(val) => handleChange("hasBalcony", val)}
           />
           <Label htmlFor="balcony">Has Balcony</Label>
         </div>

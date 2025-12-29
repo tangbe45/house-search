@@ -10,10 +10,60 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import FilterForm from "@/app/(shared-layout)/houses/_components/filter-form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { HouseFilter, HouseType, LocationData } from "@/types";
+
+export const initializeHouseFilter = {
+  houseType: "",
+  minPrice: "",
+  maxPrice: "",
+  bedrooms: "",
+  bathrooms: "",
+  purpose: "FOR_RENT",
+  hasInternalToilet: false,
+  hasWell: false,
+  hasParking: false,
+  hasFence: false,
+  hasBalcony: false,
+  forRent: undefined,
+  forSale: undefined,
+  region: "",
+  division: "",
+  subdivision: "",
+  neighborhood: "",
+};
 
 export const FilterButton = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [houseTypes, setHouseTypes] = useState<HouseType[]>([]);
+  const [filter, setFilter] = useState<HouseFilter>(initializeHouseFilter);
+  const [location, setLocation] = useState<LocationData>({
+    regions: "",
+    divisions: "",
+    subdivisions: "",
+    neighborhoods: "",
+  });
+
+  useEffect(() => {
+    async function loadFilters() {
+      const [types_result, regions_result] = await Promise.all([
+        fetch("/api/house-types"),
+        fetch("/api/regions"),
+      ]);
+
+      const regions = await regions_result.json();
+      const types = await types_result.json();
+      console.log(regions);
+
+      setLocation({ ...location, regions: regions });
+      setHouseTypes(types);
+    }
+    const time = setTimeout(() => {
+      loadFilters();
+    }, 1000);
+
+    return () => clearTimeout(time);
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -30,7 +80,19 @@ export const FilterButton = () => {
             Reduce the number of house to the area of interest
           </DialogDescription>
         </DialogHeader>
-        <FilterForm onClose={() => setIsOpen(false)} />
+        <FilterForm
+          houseTypes={houseTypes}
+          filter={filter}
+          location={location}
+          resetForm={() => setFilter(initializeHouseFilter)}
+          onSetLocation={(key, value) =>
+            setLocation((prev) => ({ ...prev, [key]: value }))
+          }
+          onSetFilter={(key, value) =>
+            setFilter((prev) => ({ ...prev, [key]: value }))
+          }
+          onClose={() => setIsOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );

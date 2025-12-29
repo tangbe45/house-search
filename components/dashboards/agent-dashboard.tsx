@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Pencil, SquareUser, PlusCircle } from "lucide-react";
+import {
+  Trash2,
+  Pencil,
+  SquareUser,
+  PlusCircle,
+  Delete,
+  LoaderIcon,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -13,12 +20,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button, buttonVariants } from "@/components/ui/button";
-import imageUrl from "../../public/house/house.jpg";
 import Image, { StaticImageData } from "next/image";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { CopyButton } from "../web/copy-button";
 import { isExpired } from "@/lib/is-expired";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { useRouter } from "next/navigation";
+import { Label } from "../ui/label";
+import { Input } from "../ui/input";
 
 interface housesProps {
   id: string;
@@ -46,7 +65,10 @@ interface Agent {
 
 export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
   // Dummy states (replace with real data fetching)
-  const [properties, setProperties] = useState<housesProps[]>(houses);
+  //const [properties, setProperties] = useState<housesProps[]>(houses);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const router = useRouter();
 
   const [tokens, setTokens] = useState<InviteToken[]>([
     {
@@ -65,9 +87,23 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
     },
   ]);
 
-  const deleteProperty = (id: string) => {
-    setProperties((prev) => prev.filter((p) => p.id !== id));
-    toast.warning("Property deleted");
+  const deleteProperty = async (id: string) => {
+    setIsProcessing(true);
+    const res = await fetch(`api/houses/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const result = await res.json();
+
+    if (!result.success) {
+      toast.error(result.message);
+    }
+
+    toast.success(result.message);
+    router.refresh();
+    setIsOpen(false);
+    setIsProcessing(false);
   };
 
   const generateToken = (email: string) => {
@@ -120,7 +156,7 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
               <CardTitle>Total Listings</CardTitle>
             </CardHeader>
             <CardContent className="text-center pt-0 text-gray-500 text-4xl font-bold">
-              {properties.length}
+              {houses.length}
             </CardContent>
           </Card>
           <Card className="pt-0 pb-4 hover:shadow-md gap-4 text-gray-400 overflow-hidden transition">
@@ -128,7 +164,7 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
               <CardTitle>Rented</CardTitle>
             </CardHeader>
             <CardContent className="text-center pt-0 text-gray-500 text-4xl font-bold">
-              {properties.filter((p) => p.status !== "AVAILABLE").length}
+              {houses.filter((p) => p.status !== "AVAILABLE").length}
             </CardContent>
           </Card>
           <Card className="pt-0 pb-4 hover:shadow-md gap-4 text-gray-400 overflow-hidden transition">
@@ -176,7 +212,7 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {properties.map((property) => (
+              {houses.map((property) => (
                 <TableRow key={property.id}>
                   <TableCell className="font-medium">
                     <Image
@@ -201,9 +237,52 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
                     >
                       <Pencil size={4} />
                     </Link>
-                    <Button variant="ghost">
-                      <Trash2 size={4} />
-                    </Button>
+                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" className="cursor-pointer">
+                          <Trash2 size={4} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Are you absolutely sure?</DialogTitle>
+                          <DialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete this house and remove its data from our
+                            servers.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button
+                            disabled={isProcessing}
+                            variant={"destructive"}
+                            id={property.id}
+                            onClick={(e) => deleteProperty(e.currentTarget.id)}
+                          >
+                            {isProcessing ? (
+                              <span className="flex items-center gap-x-2">
+                                <LoaderIcon
+                                  role="status"
+                                  aria-label="Loading"
+                                  className="size-4 animate-spin"
+                                />
+                                Processing...
+                              </span>
+                            ) : (
+                              "Delete"
+                            )}
+                          </Button>
+
+                          <Button
+                            variant={"outline"}
+                            onClick={() => setIsOpen(false)}
+                            disabled={isProcessing}
+                          >
+                            Cancel
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}
@@ -219,9 +298,40 @@ export default function AgentDashboard({ houses }: { houses: housesProps[] }) {
             <h2 className="text-2xl font-bold">Invitation Token</h2>
           </div>
           <div className="flex justify-end mb-2">
-            <Button size="sm" className={`flex items-center gap-2`}>
-              <SquareUser className="h-4 w-4" /> Generate Invitation Token
-            </Button>
+            <Dialog>
+              <form>
+                <DialogTrigger asChild>
+                  <Button size="sm" className={`flex items-center gap-2`}>
+                    <SquareUser className="h-4 w-4" /> Generate Invitation Token
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-106.25">
+                  <DialogHeader>
+                    <DialogTitle>Edit profile</DialogTitle>
+                    <DialogDescription>
+                      Make changes to your profile here. Click save when
+                      you&apos;re done.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4">
+                    <div className="grid gap-3">
+                      <Label htmlFor="name-1">Target Email</Label>
+                      <Input
+                        id="name-1"
+                        name="email"
+                        defaultValue="john@gmail.com"
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button type="submit">Save changes</Button>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </form>
+            </Dialog>
           </div>
           <Table>
             <TableHeader>

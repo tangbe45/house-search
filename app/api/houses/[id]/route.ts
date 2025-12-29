@@ -8,6 +8,7 @@ import { headers } from "next/headers";
 import { db } from "@/server/db/drizzle";
 import { houseUpdateSchema } from "@/lib/validation/zod-schemas";
 import z from "zod";
+import { HouseService } from "@/server/services/house.service";
 
 export async function PUT(
   req: NextRequest,
@@ -15,9 +16,6 @@ export async function PUT(
 ) {
   const body = await req.json();
   try {
-    /* ──────────────────────────────────────────────── */
-    /* 1. AUTHORIZATION                                 */
-    /* ──────────────────────────────────────────────── */
     const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session?.user) {
@@ -31,18 +29,12 @@ export async function PUT(
       );
     }
 
-    const rolesResult = await db
-      .select({ name: roles.name })
-      .from(userRoles)
-      .where(eq(userRoles.userId, session.user.id))
-      .leftJoin(roles, eq(roles.id, userRoles.roleId));
-
-    const isAuthorized = rolesResult.some(
-      (role) => role.name === "agent" || role.name === "admin"
-    );
+    const isAuthorized =
+      session.user.roles.includes("agent") ||
+      session.user.roles.includes("admin");
 
     if (isAuthorized === false) {
-      body.newImages.map((img: { url: string; publicId: string }) => {
+      body.images.map((img: { url: string; publicId: string }) => {
         deleteFromCloudinary(img.publicId);
       });
 
@@ -54,138 +46,7 @@ export async function PUT(
 
     const { id: houseId } = await params;
 
-    /* ──────────────────────────────────────────────── */
-    /* 2. CHECKING FOR OWNER                            */
-    /* ──────────────────────────────────────────────── */
-    const ownerCheck = await db
-      .select()
-      .from(houses)
-      .where(and(eq(houses.id, houseId), eq(houses.agentId, session.user.id)));
-    if (ownerCheck.length === 0) {
-      body.newImages.map((img: { url: string; publicId: string }) => {
-        deleteFromCloudinary(img.publicId);
-      });
-
-      return NextResponse.json(
-        { success: false, message: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
-    /* ──────────────────────────────────────────────── */
-    /* 3. PARSE BODY                                    */
-    /* ──────────────────────────────────────────────── */
-    const parsed = houseUpdateSchema.safeParse(body);
-    if (!parsed.success) {
-      body.newImages.map((img: { url: string; publicId: string }) => {
-        deleteFromCloudinary(img.publicId);
-      });
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Invalid input",
-          issues: z.treeifyError(parsed.error),
-        },
-        { status: 400 }
-      );
-    }
-
-    const {
-      title,
-      price,
-      location,
-      bedrooms,
-      bathrooms,
-      purpose,
-      houseTypeId,
-      regionId,
-      subdivisionId,
-      divisionId,
-      hasBalcony,
-      hasFence,
-      neighborhoodId,
-      hasInternalToilet,
-      hasWell,
-      hasParking,
-      description,
-    } = parsed.data;
-    /* ──────────────────────────────────────────────── */
-    /* 4. DELETE IMAGES FROM CLOUDINARY                 */
-    /* ──────────────────────────────────────────────── */
-
-    await Promise.all(
-      body.imagesToDelete.map((img: string) => {
-        deleteFromCloudinary(img);
-      })
-    );
-
-    /* ──────────────────────────────────────────────── */
-    /* 5. DELETE IMAGE RECORDS FROM DB                  */
-    /* ──────────────────────────────────────────────── */
-
-    if (body.imagesToDelete.length > 0) {
-      await db
-        .delete(uploadedImages)
-        .where(inArray(uploadedImages.publicId, body.imagesToDelete));
-    }
-    /* ──────────────────────────────────────────────── */
-    /* 6. Check the existence of house                  */
-    /* ──────────────────────────────────────────────── */
-    const houseExist = await db
-      .select()
-      .from(houses)
-      .where(exists(db.select().from(houses).where(eq(houses.id, houseId))));
-
-    if (!houseExist) {
-      body.newImages.map((img: { url: string; publicId: string }) => {
-        deleteFromCloudinary(img.publicId);
-      });
-
-      return NextResponse.json(
-        { success: false, message: "House does not exist" },
-        { status: 404 }
-      );
-    }
-    /* ──────────────────────────────────────────────── */
-    /* 7. INSERT NEW IMAGE RECORDS                      */
-    /* ──────────────────────────────────────────────── */
-    if (body.newImages.length > 0) {
-      await db.insert(uploadedImages).values(
-        body.newImages.map((img: { url: string; publicId: string }) => ({
-          houseId,
-          url: img.url,
-          publicId: img.publicId,
-        }))
-      );
-    }
-
-    /* ──────────────────────────────────────────────── */
-    /* 8. UPDATE HOUSE FIELDS                           */
-    /* ──────────────────────────────────────────────── */
-    await db
-      .update(houses)
-      .set({
-        title,
-        price,
-        location,
-        bedrooms,
-        bathrooms,
-        purpose,
-        houseTypeId,
-        regionId,
-        subdivisionId,
-        divisionId,
-        hasBalcony,
-        hasFence,
-        neighborhoodId,
-        hasInternalToilet,
-        hasWell,
-        hasParking,
-        description,
-        updatedAt: new Date(),
-      })
-      .where(eq(houses.id, houseId));
+    await HouseService.updateHouse(houseId, session.user.id, body);
 
     return NextResponse.json({
       success: true,
@@ -203,4 +64,53 @@ export async function PUT(
       { status: 500 }
     );
   }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const isAuthorized =
+      session.user.roles.includes("agent") ||
+      session.user.roles.includes("admin");
+
+    if (isAuthorized === false) {
+      return NextResponse.json(
+        { success: false, message: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    const { id: houseId } = await params;
+
+    await HouseService.deleteHouse(houseId, session.user.id);
+
+    return NextResponse.json(
+      { success: true, message: "Property successfully deleted" },
+      { status: 200 }
+    );
+  } catch (error) {
+    const err = error as Error;
+    return NextResponse.json(
+      { success: false, message: err.message || "Failed to delete house" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const body = await req.json();
 }

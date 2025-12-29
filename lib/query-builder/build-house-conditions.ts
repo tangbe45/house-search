@@ -37,5 +37,23 @@ export function buildHouseConditions(params: Record<string, any>) {
     conditions.push(eq(houses.neighborhoodId, params.neighbourhood));
   }
 
+  if (params.hasInternalToilet) {
+    conditions.push(eq(houses.hasInternalToilet, true));
+  }
+
+  if (params.hasWell) {
+    conditions.push(eq(houses.hasWell, true));
+  }
+
+  if (params.hasBalcony) {
+    conditions.push(eq(houses.hasBalcony, true));
+  }
+  if (params.hasParking) {
+    conditions.push(eq(houses.hasParking, true));
+  }
+  if (params.hasFence) {
+    conditions.push(eq(houses.hasFence, true));
+  }
+
   return conditions;
 }
