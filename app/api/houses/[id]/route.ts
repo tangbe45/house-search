@@ -4,6 +4,8 @@ import { deleteFromCloudinary } from "@/lib/cloudinary/cloudinary-server";
 import { auth } from "@/lib/auth"; // your auth helper
 import { headers } from "next/headers";
 import { HouseService } from "@/server/services/house.service";
+import { houseUpdateSchema } from "@/lib/validation/zod-schemas";
+import z from "zod";
 
 export async function PUT(
   req: NextRequest,
@@ -24,24 +26,15 @@ export async function PUT(
       );
     }
 
-    const isAuthorized =
-      session.user.roles.includes("agent") ||
-      session.user.roles.includes("admin");
-
-    if (isAuthorized === false) {
-      body.images.map((img: { url: string; publicId: string }) => {
-        deleteFromCloudinary(img.publicId);
-      });
-
-      return NextResponse.json(
-        { success: false, message: "Forbidden" },
-        { status: 403 }
-      );
+    const parsed = houseUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new Error(`Error: ${z.treeifyError(parsed.error)}`);
     }
 
     const { id: houseId } = await params;
+    const user = { id: session.user.id, role: session.user.role };
 
-    await HouseService.updateHouse(houseId, session.user.id, body);
+    await HouseService.updateHouse(houseId, user, body);
 
     return NextResponse.json({
       success: true,
@@ -75,20 +68,10 @@ export async function DELETE(
       );
     }
 
-    const isAuthorized =
-      session.user.roles.includes("agent") ||
-      session.user.roles.includes("admin");
-
-    if (isAuthorized === false) {
-      return NextResponse.json(
-        { success: false, message: "Forbidden" },
-        { status: 403 }
-      );
-    }
-
     const { id: houseId } = await params;
+    const user = { id: session.user.id, role: session.user.role };
 
-    await HouseService.deleteHouse(houseId, session.user.id);
+    await HouseService.deleteHouse(houseId, user);
 
     return NextResponse.json(
       { success: true, message: "Property successfully deleted" },

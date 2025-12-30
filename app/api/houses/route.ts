@@ -7,6 +7,8 @@ import "dotenv/config";
 import { headers } from "next/headers";
 import { deleteFromCloudinary } from "@/lib/cloudinary/cloudinary-server";
 import { HouseService } from "@/server/services/house.service";
+import { houseCreateSchema } from "@/lib/validation/zod-schemas";
+import z from "zod";
 
 /* ──────────────────────────────────────────────── */
 /* 1. GET                                          */
@@ -58,25 +60,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isAuthorized =
-      session.user.roles.includes("agent") ||
-      session.user.roles.includes("admin");
-
-    if (isAuthorized === false) {
-      body.images.map((img: { url: string; publicId: string }) => {
-        deleteFromCloudinary(img.publicId);
-      });
-
-      return NextResponse.json(
-        { success: false, message: "Forbidden" },
-        { status: 403 }
-      );
+    const parsed = houseCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      console.log(`Error: ${z.treeifyError(parsed.error)}`);
+      throw new Error(parsed.error.message);
     }
 
-    const ownerId = session.user.id;
-    console.log(ownerId);
+    const user = { id: session.user.id, role: session.user.role };
 
-    await HouseService.createHouse(body, ownerId);
+    await HouseService.createHouse(user, parsed.data);
 
     // 6. Success response
     return NextResponse.json(

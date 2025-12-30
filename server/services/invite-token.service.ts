@@ -2,7 +2,6 @@ import { CreateInvitToken } from "@/types";
 import { InviteTokenRepository } from "../repositories/invite-token.repository";
 
 export const InviteTokenService = {
-  //Query agents tokens
   async getAgentTokens(user: { id: string; role: string }) {
     try {
       const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
@@ -19,7 +18,7 @@ export const InviteTokenService = {
           token: item.token,
           expiresAt: item.expiresAt,
           targetEmail: item.targetEmail,
-          status: item.used,
+          used: item.used,
         };
       });
 
@@ -51,6 +50,21 @@ export const InviteTokenService = {
     } catch (error) {
       console.log(`Error: ${error}`);
       const err = error as Error;
+      throw new Error(err.message || "Failed to create token");
+    }
+  },
+  async deleteAgentToken(tokenId: string, user: { id: string; role: string }) {
+    try {
+      const allowedRoles = ["admin", "agent", "partner", "provider"];
+
+      if (!allowedRoles.includes(user.role)) {
+        throw new Error("Forbidden: Your account type cannot create listings.");
+      }
+
+      return InviteTokenRepository.delete(tokenId, user.id);
+    } catch (error) {
+      const err = error as Error;
+      throw new Error(err.message || "Error: Failed to delete token");
     }
   },
 };

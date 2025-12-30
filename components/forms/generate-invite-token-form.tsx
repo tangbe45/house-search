@@ -121,7 +121,7 @@ export const GenerateInviteTokenForm = ({
             <FormItem>
               <FormLabel>Target email</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input readOnly {...field} />
               </FormControl>
 
               <FormMessage />

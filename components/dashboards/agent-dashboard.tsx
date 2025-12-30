@@ -9,7 +9,7 @@ import {
   SquareUser,
   PlusCircle,
   LoaderIcon,
-  UserPlus,
+  Share,
 } from "lucide-react";
 import {
   Table,
@@ -36,20 +36,10 @@ import {
   DialogTrigger,
 } from "../ui/dialog";
 import { useRouter } from "next/navigation";
-import { Input } from "../ui/input";
 import { CreateInvitToken } from "@/types";
-import { createInviteTokenSchema } from "@/lib/validation/zod-schemas";
-import { FieldValues, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../ui/form";
+import { FieldValues } from "react-hook-form";
 import { GenerateInviteTokenForm } from "../forms/generate-invite-token-form";
+import { ShareButton } from "../web/share-button";
 
 interface housesProps {
   id: string;
@@ -85,7 +75,8 @@ export default function AgentDashboard({
   // Dummy states (replace with real data fetching)
   //const [properties, setProperties] = useState<housesProps[]>(houses);
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isHouseDialogOpen, setIsHouseDialogOpen] = useState(false);
+  const [isTokenDialogOpen, setIsTokenDialogOpen] = useState(false);
   const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -100,22 +91,14 @@ export default function AgentDashboard({
 
     if (!result.success) {
       toast.error(result.message);
+      setIsProcessing(false);
+      return;
     }
 
     toast.success(result.message);
     router.refresh();
-    setIsOpen(false);
+    setIsHouseDialogOpen(false);
     setIsProcessing(false);
-  };
-
-  const onSubmit = (formData: CreateInvitToken) => {
-    console.log(formData);
-
-    toast.success("Invitation token generated!");
-  };
-
-  const onFormError = (errors: FieldValues) => {
-    console.log("Validation Errors:", errors);
   };
 
   const copyToken = (token: string) => {
@@ -134,9 +117,25 @@ export default function AgentDashboard({
     { id: "1", name: "John Doe", email: "user1@example.com" },
   ]);
 
-  const deleteToken = (id: string) => {
-    //setTokens((prev) => prev.filter((t) => t.id !== id));
-    toast.warning("Token revoked");
+  const deleteToken = async (id: string) => {
+    setIsProcessing(true);
+    const res = await fetch(`api/invite-tokens/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const result = await res.json();
+
+    if (!result.success) {
+      toast.error(result.message);
+      setIsProcessing(false);
+      return;
+    }
+
+    toast.success(result.message);
+    router.refresh();
+    setIsTokenDialogOpen(false);
+    setIsProcessing(false);
   };
 
   return (
@@ -230,7 +229,10 @@ export default function AgentDashboard({
                     >
                       <Pencil size={4} />
                     </Link>
-                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                    <Dialog
+                      open={isHouseDialogOpen}
+                      onOpenChange={setIsHouseDialogOpen}
+                    >
                       <DialogTrigger asChild>
                         <Button variant="ghost" className="cursor-pointer">
                           <Trash2 size={4} />
@@ -245,7 +247,7 @@ export default function AgentDashboard({
                             servers.
                           </DialogDescription>
                         </DialogHeader>
-                        <DialogFooter>
+                        <DialogFooter className="flex gap-4">
                           <Button
                             disabled={isProcessing}
                             variant={"destructive"}
@@ -265,14 +267,13 @@ export default function AgentDashboard({
                               "Delete"
                             )}
                           </Button>
-                          <DialogClose>
-                            <Button
-                              variant={"outline"}
-                              type="button"
-                              disabled={isProcessing}
-                            >
-                              Cancel
-                            </Button>
+                          <DialogClose
+                            disabled={isProcessing}
+                            className={`${buttonVariants({
+                              variant: "outline",
+                            })}`}
+                          >
+                            Cancel
                           </DialogClose>
                         </DialogFooter>
                       </DialogContent>
@@ -336,6 +337,7 @@ export default function AgentDashboard({
                         {token.token}
                       </span>
                       <CopyButton value={token.token} />
+                      <ShareButton value={token.token} />
                     </div>
                   </TableCell>
                   <TableCell>{token.expiresAt}</TableCell>
@@ -349,13 +351,58 @@ export default function AgentDashboard({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      disabled={token.used}
-                      onClick={() => console.log("I was clicked")}
-                      variant={"ghost"}
+                    <Dialog
+                      open={isTokenDialogOpen}
+                      onOpenChange={setIsTokenDialogOpen}
                     >
-                      <Trash2 size={4} />
-                    </Button>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          disabled={token.used}
+                          className="cursor-pointer"
+                        >
+                          <Trash2 size={4} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Are you absolutely sure?</DialogTitle>
+                          <DialogDescription>
+                            This action cannot be undone. This will permanently
+                            delete this token and remove its data from our
+                            servers.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="flex gap-4">
+                          <Button
+                            disabled={isProcessing}
+                            variant={"destructive"}
+                            onClick={() => deleteToken(token.id)}
+                          >
+                            {isProcessing ? (
+                              <span className="flex items-center gap-x-2">
+                                <LoaderIcon
+                                  role="status"
+                                  aria-label="Loading"
+                                  className="size-4 animate-spin"
+                                />
+                                Deleting
+                              </span>
+                            ) : (
+                              "Delete"
+                            )}
+                          </Button>
+                          <DialogClose
+                            disabled={isProcessing}
+                            className={`${buttonVariants({
+                              variant: "outline",
+                            })}`}
+                          >
+                            Cancel
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,31 +1,27 @@
 import { HouseRepository } from "../repositories/house.repository";
-import {
-  houseCreateSchema,
-  houseUpdateSchema,
-} from "@/lib/validation/zod-schemas";
 import { UploadedImagesRepository } from "../repositories/uploadedImages.repository";
-import z from "zod";
-import { HouseCreateInput, HouseUpdateInput } from "@/types";
-import { db } from "../db/drizzle";
+import { HouseCreateInput } from "@/types";
 import { deleteFromCloudinary } from "@/lib/cloudinary/cloudinary-server";
-import { collectSegmentData } from "next/dist/server/app-render/collect-segment-data";
 
 export const HouseService = {
-  async createHouse(data: HouseCreateInput, ownerId: string) {
+  async createHouse(
+    user: { id: string; role: string },
+    data: HouseCreateInput
+  ) {
     try {
-      const { images, ...house } = data;
+      const { images } = data;
       if (!images || images.length === 0) {
         console.log("A house must have at least one image");
         throw new Error("A house must have at least one image");
       }
 
-      const parsed = houseCreateSchema.safeParse(house);
-      if (!parsed.success) {
-        console.log(`Error: ${z.treeifyError(parsed.error)}`);
-        throw new Error(parsed.error.message);
+      const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
+
+      if (!allowedRoles.includes(user.role)) {
+        throw new Error("Forbidden: Your account type cannot create listings.");
       }
 
-      const houseInput = { ...parsed.data, agentId: ownerId };
+      const houseInput = { ...data, agentId: user.id };
 
       const houseresult = await HouseRepository.create(houseInput);
       await UploadedImagesRepository.create(houseresult[0].id, images);
@@ -119,18 +115,23 @@ export const HouseService = {
     }
   },
 
-  async updateHouse(houseId: string, ownerId: string, data: any) {
-    const parsed = houseUpdateSchema.safeParse(data);
-    if (!parsed.success) {
-      throw new Error(`Error: ${z.treeifyError(parsed.error)}`);
-    }
-
+  async updateHouse(
+    houseId: string,
+    user: { id: string; role: string },
+    data: any
+  ) {
     console.log(data.imagesToDelete);
 
     data.imagesToDelete.map(async (img: string) => {
       const result = deleteFromCloudinary(img);
       console.log(result);
     });
+
+    const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
+
+    if (!allowedRoles.includes(user.role)) {
+      throw new Error("Forbidden: Your account type cannot create listings.");
+    }
 
     if (data.imagesToDelete.length > 0) {
       const result = UploadedImagesRepository.delete(data.imagesToDelete);
@@ -142,7 +143,7 @@ export const HouseService = {
       console.log(result);
     }
 
-    const updated = await HouseRepository.update(houseId, ownerId, data);
+    const updated = await HouseRepository.update(houseId, user.id, data);
 
     if (updated.length === 0) {
       throw new Error("Unauthorized or house not found");
@@ -151,15 +152,22 @@ export const HouseService = {
     return updated[0];
   },
 
-  async deleteHouse(houseId: string, ownerId: string) {
+  async deleteHouse(houseId: string, user: { id: string; role: string }) {
     try {
+      const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
+
+      if (!allowedRoles.includes(user.role)) {
+        throw new Error("Forbidden: Your account type cannot create listings.");
+      }
+      console.log(user);
+      console.log(houseId);
       const house = await HouseRepository.findByIdWithImages(houseId);
 
-      if (!house || house.agentId !== ownerId) {
-        throw new Error("Unauthorized");
+      if (!house) {
+        throw new Error("Error: House not found");
       }
 
-      HouseRepository.delete(houseId, ownerId);
+      HouseRepository.delete(houseId, user.id);
 
       house.images.map(async (img) => {
         const result = deleteFromCloudinary(img.publicId);

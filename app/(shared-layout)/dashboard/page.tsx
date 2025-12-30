@@ -5,7 +5,6 @@ import { headers } from "next/headers";
 async function getAgentTokens() {
   const res = await fetch("http://localhost:3000/api/invite-tokens", {
     headers: await headers(),
-    next: { revalidate: 3600 }, // Revalidate every hour
     cache: "no-store",
   });
   console.log(res);
@@ -21,6 +20,7 @@ const DashboarPage = async () => {
   const houses = await getAgentHouses();
 
   const tokens = await getAgentTokens();
+  console.log(tokens);
 
   return <AgentDashboard houses={houses} tokens={tokens} />;
 };

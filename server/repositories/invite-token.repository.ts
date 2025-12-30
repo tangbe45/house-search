@@ -22,4 +22,15 @@ export const InviteTokenRepository = {
   // Update Token
 
   // Delete Token
+  async delete(tokenId: string, creatorId: string) {
+    return db
+      .delete(roleInviteTokens)
+      .where(
+        and(
+          eq(roleInviteTokens.id, tokenId),
+          eq(roleInviteTokens.createdBy, creatorId),
+          eq(roleInviteTokens.used, false)
+        )
+      );
+  },
 };

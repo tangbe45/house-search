@@ -34,10 +34,12 @@ export const signUp = async ({
   name,
   email,
   password,
+  roleId,
 }: {
   name: string;
   email: string;
   password: string;
+  roleId: string;
 }) => {
   try {
     const token = await auth.api.signUpEmail({
@@ -45,6 +47,7 @@ export const signUp = async ({
         name,
         email,
         password,
+        roleId,
       },
     });
 
