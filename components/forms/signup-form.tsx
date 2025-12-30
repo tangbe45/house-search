@@ -45,6 +45,7 @@ export const formSchema = z
       .min(8, "Password must be at least 8 characters long")
       .max(30, "Password must be at most 30 characters long"),
     confirmPassword: z.string(),
+    roleId: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -61,6 +62,7 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
       email: "",
       password: "",
       confirmPassword: "",
+      roleId: "",
     },
   });
 
@@ -80,7 +82,10 @@ export function SignupForm({ ...props }: React.ComponentProps<typeof Card>) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    const { success, message } = await signUp(values);
+    const { success, message } = await signUp({
+      ...values,
+      roleId: values.roleId || "",
+    });
 
     if (success) {
       toast.success(message);

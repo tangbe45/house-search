@@ -61,7 +61,7 @@ export const auth = betterAuth({
     additionalFields: {
       roleId: {
         type: "string",
-        required: true, // Ensuring Better Auth expects this field
+        required: false, // Ensuring Better Auth expects this field
         defaultValue: null, // Allow temporary null before the hook sets it
       },
     },
