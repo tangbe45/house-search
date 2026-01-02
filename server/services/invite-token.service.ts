@@ -3,34 +3,25 @@ import { InviteTokenRepository } from "../repositories/invite-token.repository";
 
 export const InviteTokenService = {
   async getAgentTokens(user: { id: string; role: string }) {
-    try {
-      const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
+    const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
 
-      if (!allowedRoles.includes(user.role)) {
-        throw new Error("Forbidden: Your account type cannot create listings.");
-      }
-
-      const result = await InviteTokenRepository.findManyById(user.id);
-
-      const token = result.map((item) => {
-        return {
-          id: item.id,
-          token: item.token,
-          expiresAt: item.expiresAt,
-          targetEmail: item.targetEmail,
-          used: item.used,
-        };
-      });
-
-      return token;
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      const err = error as Error;
-      return {
-        success: false,
-        message: err.message,
-      };
+    if (!allowedRoles.includes(user.role)) {
+      throw new Error("Forbidden: Your account type cannot create listings.");
     }
+
+    const result = await InviteTokenRepository.findManyById(user.id);
+
+    const token = result.map((item) => {
+      return {
+        id: item.id,
+        token: item.token,
+        expiresAt: item.expiresAt.toISOString(),
+        targetEmail: item.targetEmail,
+        used: item.used,
+      };
+    });
+
+    return token;
   },
 
   async createAgentToken(

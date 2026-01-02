@@ -7,6 +7,7 @@ import { headers } from "next/headers";
 import { houses, uploadedImages } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { HouseService } from "@/server/services/house.service";
+import { InviteTokenService } from "@/server/services/invite-token.service";
 
 export async function getAgentHouses() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -55,6 +56,18 @@ export async function getAgentHouses() {
   console.log(processedHousesWithImages);
 
   return processedHousesWithImages;
+}
+
+export async function getAgentTokens() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const tokens = await InviteTokenService.getAgentTokens({
+    id: session.user.id,
+    role: session.user.role,
+  });
+
+  return tokens;
 }
 
 export async function fetchHouseForEditAction(houseId: string) {

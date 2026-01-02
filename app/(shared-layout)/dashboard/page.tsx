@@ -1,22 +1,22 @@
 import AgentDashboard from "@/components/dashboards/agent-dashboard";
-import { getAgentHouses } from "./actions";
+import { getAgentHouses, getAgentTokens } from "./actions";
 import { headers } from "next/headers";
 
-async function getAgentTokens() {
-  const authHeaders = new Headers(await headers());
+// async function getAgentTokens() {
+//   const authHeaders = new Headers(await headers());
 
-  const res = await fetch("http://localhost:3000/api/invite-tokens", {
-    headers: authHeaders,
-    cache: "no-store",
-  });
-  console.log(res);
+//   const res = await fetch(`${process.env.BASE_HOST}/api/invite-tokens`, {
+//     headers: authHeaders,
+//     cache: "no-store",
+//   });
+//   console.log(res);
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch data");
-  }
+//   if (!res.ok) {
+//     throw new Error("Failed to fetch data");
+//   }
 
-  return res.json();
-}
+//   return res.json();
+// }
 
 const DashboarPage = async () => {
   const houses = await getAgentHouses();
