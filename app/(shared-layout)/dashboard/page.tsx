@@ -3,8 +3,10 @@ import { getAgentHouses } from "./actions";
 import { headers } from "next/headers";
 
 async function getAgentTokens() {
+  const authHeaders = new Headers(await headers());
+
   const res = await fetch("http://localhost:3000/api/invite-tokens", {
-    headers: await headers(),
+    headers: authHeaders,
     cache: "no-store",
   });
   console.log(res);
