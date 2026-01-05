@@ -151,7 +151,7 @@ export default function Navbar() {
           </div>
           <div className="flex flex-col space-y-4">
             {session ? (
-              <div className="hidden md:flex gap-2">
+              <div className="flex flex-col md:hidden gap-2">
                 <Button
                   onClick={() => (
                     authClient.signOut(),
@@ -163,7 +163,7 @@ export default function Navbar() {
                 </Button>
               </div>
             ) : (
-              <div className="hidden md:flex gap-2">
+              <div className="flex flex-col md:hidden gap-2">
                 <Link
                   className={buttonVariants({ variant: "outline" })}
                   href="/auth/login"
