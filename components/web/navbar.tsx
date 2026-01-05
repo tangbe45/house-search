@@ -68,7 +68,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-2">
           {session ? (
-            <>
+            <div className="hidden md:flex gap-2">
               <p>Welcome, {session.user.name}</p>
               {/* <img src={session.user.image} alt="User avatar" /> */}
               <Button
@@ -80,7 +80,7 @@ export default function Navbar() {
               >
                 Sign Out
               </Button>
-            </>
+            </div>
           ) : (
             <div className="hidden md:flex gap-2">
               <Link
@@ -150,20 +150,31 @@ export default function Navbar() {
             ))}
           </div>
           <div className="flex flex-col space-y-4">
-            <Link
-              onClick={toggleMenu}
-              className={buttonVariants({ variant: "outline" })}
-              href="/auth/login"
-            >
-              Login
-            </Link>
-            <Link
-              onClick={toggleMenu}
-              className={buttonVariants()}
-              href="/auth/sign-up"
-            >
-              Sign Up
-            </Link>
+            {session ? (
+              <div className="hidden md:flex gap-2">
+                <Button
+                  onClick={() => (
+                    authClient.signOut(),
+                    router.push("/auth/login"),
+                    router.refresh()
+                  )}
+                >
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="hidden md:flex gap-2">
+                <Link
+                  className={buttonVariants({ variant: "outline" })}
+                  href="/auth/login"
+                >
+                  Login
+                </Link>
+                <Link className={buttonVariants()} href="/auth/sign-up">
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
