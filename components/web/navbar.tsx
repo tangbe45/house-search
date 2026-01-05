@@ -3,11 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { buttonVariants } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 import { ThemeToggle } from "./theme-toggle";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const { data: session, isPending, error, refetch } = authClient.useSession();
 
   useEffect(() => {
     if (isOpen) {
@@ -29,6 +33,9 @@ export default function Navbar() {
     { name: "Dashboard", href: "/dashboard" },
     { name: "Contact", href: "/contact" },
   ];
+
+  if (isPending) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <>
@@ -60,17 +67,34 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden md:flex gap-2">
-            <Link
-              className={buttonVariants({ variant: "outline" })}
-              href="/auth/login"
-            >
-              Login
-            </Link>
-            <Link className={buttonVariants()} href="/auth/sign-up">
-              Sign Up
-            </Link>
-          </div>
+          {session ? (
+            <>
+              <p>Welcome, {session.user.name}</p>
+              {/* <img src={session.user.image} alt="User avatar" /> */}
+              <Button
+                onClick={() => (
+                  authClient.signOut(),
+                  router.push("/auth/login"),
+                  router.refresh()
+                )}
+              >
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <div className="hidden md:flex gap-2">
+              <Link
+                className={buttonVariants({ variant: "outline" })}
+                href="/auth/login"
+              >
+                Login
+              </Link>
+              <Link className={buttonVariants()} href="/auth/sign-up">
+                Sign Up
+              </Link>
+            </div>
+          )}
+
           <ThemeToggle />
           {/* Mobile Menu Button */}
           <button
