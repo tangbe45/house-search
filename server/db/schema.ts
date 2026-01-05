@@ -37,10 +37,23 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+});
 
-  roleId: uuid("role_id")
-    .references(() => roles.id, { onDelete: "restrict" })
-    .notNull(),
+export const professionalProfiles = pgTable("professional_profiles", {
+  id: uuid("id").defaultRandom().primaryKey(),
+
+  userId: text("user_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull()
+    .unique(),
+
+  phone: text("phone").notNull(),
+  businessName: text("business_name"),
+  address: text("address").notNull(),
+  whatsapp: text("whatsapp"),
+  email: text("email").notNull(),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const session = pgTable(
@@ -108,13 +121,33 @@ export const roles = pgTable("roles", {
   description: text("description"),
 });
 
+export const userRoles = pgTable(
+  "user_roles",
+  {
+    userId: text("user_id")
+      .references(() => user.id, { onDelete: "cascade" })
+      .notNull(),
+    roleId: uuid("role_id")
+      .references(() => roles.id, { onDelete: "cascade" })
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.roleId] })]
+);
+
 export const roleInviteTokens = pgTable("role_invite_tokens", {
   id: uuid("id").defaultRandom().primaryKey(),
 
   token: text("token").notNull().unique(),
-  createdBy: text("created_by").notNull(),
 
-  targetEmail: text("target_email").notNull(),
+  creatorId: text("agent_id")
+    .references(() => user.id, { onDelete: "cascade" })
+    .notNull(),
+
+  invitedEmail: text("target_email").notNull(),
+
+  roleId: uuid("role_id")
+    .references(() => roles.id)
+    .notNull(),
 
   used: boolean("used").notNull().default(false),
   redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
@@ -226,11 +259,22 @@ export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
   houses: many(houses),
-  role: one(roles, {
-    fields: [user.roleId],
-    references: [roles.id],
+  roles: many(userRoles),
+  profile: one(professionalProfiles, {
+    fields: [user.id],
+    references: [professionalProfiles.userId],
   }),
 }));
+
+export const professionalProfilesRelations = relations(
+  professionalProfiles,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [professionalProfiles.userId],
+      references: [user.id],
+    }),
+  })
+);
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {
@@ -292,12 +336,16 @@ export const schema = {
   account,
   session,
   verification,
+  professionalProfiles,
   roles,
+  userRoles,
   roleInviteTokens,
   houseTypes,
   houses,
   uploadedImages,
   houseRelations,
+  userRelations,
+  professionalProfilesRelations,
   uploadedImagesRelations,
   regions,
   divisions,

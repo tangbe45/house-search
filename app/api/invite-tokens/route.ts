@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const user = { id: session.user.id, role: session.user.role };
+    const user = { id: session.user.id, roles: session.user.roles };
 
     const tokens = await InviteTokenService.getAgentTokens(user);
 
@@ -44,18 +44,24 @@ export async function POST(req: NextRequest) {
     }
 
     const parsed = createInviteTokenSchema.safeParse(body);
+
     if (!parsed.success) {
       throw new Error(`Error: ${z.treeifyError(parsed.error)}`);
     }
+    console.log(parsed.data);
 
-    const user = { id: session.user.id, role: session.user.role };
+    const user = { id: session.user.id, roles: session.user.roles };
 
-    const token = await InviteTokenService.createAgentToken(user, parsed.data);
+    const token = await InviteTokenService.createAgentToken(
+      user,
+      parsed.data.invitedEmail,
+      "agent"
+    );
 
     console.log(token);
 
     return NextResponse.json(
-      { success: true, message: "House added successfully" },
+      { success: true, message: "House added successfully", token },
       { status: 201 }
     );
   } catch (error) {

@@ -35,14 +35,18 @@ export const houseCreateSchema = z.object({
     .optional(),
 });
 
-export const createInviteTokenSchema = createInsertSchema(roleInviteTokens, {
-  targetEmail: (s) => z.email(),
-  expiresAt: (s) => z.coerce.date(),
-}).omit({
-  id: true,
-  createdAt: true,
-  createdBy: true,
-  redeemedAt: true,
+export const createInviteTokenSchema = z.object({
+  invitedEmail: z.email(),
+});
+
+export const createProfileSchema = z.object({
+  phone: z.string().min(9, "Phone number is required"),
+  whatsapp: z.string().optional(),
+  email: z.email(),
+  address: z
+    .string()
+    .min(1, "Your address is required")
+    .max(250, "Address can only contain 250 characters"),
 });
 
 /* ---------- UPDATE ---------- */

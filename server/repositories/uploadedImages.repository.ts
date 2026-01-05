@@ -8,42 +8,30 @@ type Tx = typeof db extends { transaction(cb: (tx: infer T) => any): any }
 
 export const UploadedImagesRepository = {
   async create(houseId: string, images: any[], tx?: Tx) {
-    try {
-      const executor: any = tx ?? db;
-      const result = executor
-        .insert(uploadedImages)
-        .values(
-          images!.map((obj) => ({
-            houseId: houseId,
-            publicId: obj.publicId,
-            url: obj.url,
-          }))
-        )
-        .returning();
-      return result;
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      const err = error as Error;
-      throw new Error(err.message || "Failed to create image");
-    }
+    const executor: any = tx ?? db;
+    const result = executor
+      .insert(uploadedImages)
+      .values(
+        images!.map((obj) => ({
+          houseId: houseId,
+          publicId: obj.publicId,
+          url: obj.url,
+        }))
+      )
+      .returning();
+    return result;
   },
 
   async delete(images: any[], tx?: Tx) {
-    try {
-      const executor: any = tx ?? db;
-      console.log(images);
+    const executor: any = tx ?? db;
+    console.log(images);
 
-      const result = await executor
-        .delete(uploadedImages)
-        .where(inArray(uploadedImages.publicId, images));
+    const result = await executor
+      .delete(uploadedImages)
+      .where(inArray(uploadedImages.publicId, images));
 
-      console.log(result);
+    console.log(result);
 
-      return { success: true };
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      const err = error as Error;
-      throw new Error(err.message || "Failed to delete image(s)");
-    }
+    return { success: true };
   },
 };

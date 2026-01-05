@@ -9,15 +9,9 @@ type Tx = typeof db extends { transaction(cb: (tx: infer T) => any): any }
 
 export const HouseRepository = {
   async create(data: any, tx?: Tx) {
-    try {
-      const executor: any = tx ?? db;
-      const house = await executor.insert(houses).values(data).returning();
-      return house;
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      const err = error as Error;
-      throw new Error(err.message ?? "Fail to create house");
-    }
+    const executor: any = tx ?? db;
+    const house = await executor.insert(houses).values(data).returning();
+    return house;
   },
 
   async findMany(conditions: any[], limit: number, skip: number) {
@@ -52,7 +46,7 @@ export const HouseRepository = {
       where: eq(houses.id, id),
       with: {
         images: true,
-        agent: true,
+        agent: { with: { profile: true } },
         region: true,
         division: true,
         subdivision: true,

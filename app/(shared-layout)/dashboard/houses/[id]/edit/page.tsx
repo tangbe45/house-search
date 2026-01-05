@@ -16,7 +16,7 @@ const EditHousePage = async ({ params }: EditHousePageProps) => {
   console.log(house);
 
   if ("error" in house) {
-    return <div>Error: {house.error}</div>;
+    return <div>Error: {String(house.error)}</div>;
   }
 
   const initialValues = {

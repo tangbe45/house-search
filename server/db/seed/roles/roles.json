@@ -9,9 +9,6 @@
     "name": "provider"
   },
   {
-    "name": "partner"
-  },
-  {
-    "name": "basic-user"
+    "name": "basic"
   }
 ]

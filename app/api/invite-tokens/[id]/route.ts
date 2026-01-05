@@ -18,7 +18,7 @@ export async function DELETE(
     }
 
     const { id: tokenId } = await params;
-    const user = { id: session.user.id, role: session.user.role };
+    const user = { id: session.user.id, roles: session.user.roles };
 
     const result = await InviteTokenService.deleteAgentToken(tokenId, user);
     console.log(result);

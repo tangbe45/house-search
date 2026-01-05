@@ -7,7 +7,7 @@ import { nextCookies } from "better-auth/next-js";
 import { Resend } from "resend";
 import ForgotPasswordEmail from "@/emails/reset-password";
 import VerifyEmail from "@/emails/verify-email";
-import { roles, schema, user } from "@/server/db/schema";
+import { roles, schema, user, userRoles } from "@/server/db/schema";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -56,41 +56,24 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
-  user: {
-    // 1. IMPORTANT: Tell Better Auth this field exists on the User model
-    additionalFields: {
-      roleId: {
-        type: "string",
-        required: false, // Ensuring Better Auth expects this field
-        defaultValue: null, // Allow temporary null before the hook sets it
-      },
-    },
-  },
   databaseHooks: {
     user: {
       create: {
-        before: async (newUser) => {
-          const [userCount] = await db.select({ value: count() }).from(user);
-          const isFirstUser = userCount.value === 0;
+        after: async (newUser) => {
+          const userCount = await db.$count(user);
 
-          const targetRoleName = isFirstUser ? "admin" : "basic-user";
+          const targetRoleName = userCount <= 1 ? "admin" : "basic";
 
-          const [role] = await db
-            .select()
-            .from(roles)
-            .where(eq(roles.name, targetRoleName))
-            .limit(1);
+          const roleRecord = await db.query.roles.findFirst({
+            where: eq(roles.name, targetRoleName),
+          });
 
-          if (!role) {
-            throw new Error(`Role '${targetRoleName}' not found in database.`);
+          if (roleRecord) {
+            await db.insert(userRoles).values({
+              userId: newUser.id,
+              roleId: roleRecord.id,
+            });
           }
-          console.log(role.id);
-          return {
-            data: {
-              ...newUser,
-              roleId: role.id,
-            },
-          };
         },
       },
     },
@@ -100,19 +83,19 @@ export const auth = betterAuth({
     schema,
   }),
   plugins: [
-    customSession(async ({ user: sessionUser, session }) => {
+    customSession(async ({ user, session }) => {
       const userRolesData = await db
         .select({ roleName: roles.name })
-        .from(user)
-        .innerJoin(roles, eq(user.roleId, roles.id))
-        .where(eq(user.id, sessionUser.id));
+        .from(userRoles)
+        .innerJoin(roles, eq(userRoles.roleId, roles.id))
+        .where(eq(userRoles.userId, user.id));
 
       const roleNames = userRolesData.map((r) => r.roleName);
 
       return {
         user: {
-          ...sessionUser,
-          role: roleNames[0],
+          ...user,
+          roles: roleNames,
         },
         session,
       };

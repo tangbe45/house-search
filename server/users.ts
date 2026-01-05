@@ -47,7 +47,6 @@ export const signUp = async ({
         name,
         email,
         password,
-        roleId,
       },
     });
 

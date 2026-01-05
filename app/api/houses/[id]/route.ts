@@ -32,7 +32,7 @@ export async function PUT(
     }
 
     const { id: houseId } = await params;
-    const user = { id: session.user.id, role: session.user.role };
+    const user = { id: session.user.id, roles: session.user.roles };
 
     await HouseService.updateHouse(houseId, user, body);
 
@@ -69,7 +69,7 @@ export async function DELETE(
     }
 
     const { id: houseId } = await params;
-    const user = { id: session.user.id, role: session.user.role };
+    const user = { id: session.user.id, roles: session.user.roles };
 
     await HouseService.deleteHouse(houseId, user);
 

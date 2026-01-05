@@ -2,36 +2,32 @@ import { HouseRepository } from "../repositories/house.repository";
 import { UploadedImagesRepository } from "../repositories/uploadedImages.repository";
 import { HouseCreateInput } from "@/types";
 import { deleteFromCloudinary } from "@/lib/cloudinary/cloudinary-server";
+import { email } from "zod";
 
 export const HouseService = {
   async createHouse(
-    user: { id: string; role: string },
+    user: { id: string; roles: string[] },
     data: HouseCreateInput
   ) {
-    try {
-      const { images } = data;
-      if (!images || images.length === 0) {
-        console.log("A house must have at least one image");
-        throw new Error("A house must have at least one image");
-      }
-
-      const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
-
-      if (!allowedRoles.includes(user.role)) {
-        throw new Error("Forbidden: Your account type cannot create listings.");
-      }
-
-      const houseInput = { ...data, agentId: user.id };
-
-      const houseresult = await HouseRepository.create(houseInput);
-      await UploadedImagesRepository.create(houseresult[0].id, images);
-      return houseresult;
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      const err = error as Error;
-
-      throw new Error(err.message);
+    const { images } = data;
+    if (!images || images.length === 0) {
+      console.log("A house must have at least one image");
+      throw new Error("A house must have at least one image");
     }
+
+    const allowedRoles: string[] = ["admin", "agent"];
+
+    const authorized = user.roles.some((role) => allowedRoles.includes(role));
+
+    if (!authorized) {
+      throw new Error("Forbidden: Your account type cannot create listings.");
+    }
+
+    const houseInput = { ...data, agentId: user.id };
+
+    const houseresult = await HouseRepository.create(houseInput);
+    await UploadedImagesRepository.create(houseresult[0].id, images);
+    return houseresult;
   },
 
   async getHouses(conditions: any, limit: number, skip: number) {
@@ -76,7 +72,13 @@ export const HouseService = {
       hasParking: house.hasParking,
       description: house.description,
       createdAt: house.createdAt.toISOString(),
-      agent: house.agent,
+      agent: {
+        name: house.agent.name,
+        whatsapp: house.agent.profile.whatsapp,
+        phone: house.agent.profile.phone,
+        address: house.agent.profile.address,
+        email: house.agent.profile.email,
+      },
       price: house.price,
       images: (house.images as Array<{ id: string; url: string }>).map(
         (img) => img.url
@@ -85,51 +87,45 @@ export const HouseService = {
   },
 
   async getHouseForEdit(houseId: string, userId: string) {
-    try {
-      const house = await HouseRepository.findByIdWithImages(houseId);
+    const house = await HouseRepository.findByIdWithImages(houseId);
 
-      if (!house || house.agentId !== userId) {
-        throw new Error("Unauthorized");
-      }
-
-      const processedHouse = {
-        ...house,
-        agentId: undefined,
-        agent: null,
-        region: { id: house.region.id, name: house.region.name },
-        houseType: { id: house.houseType.id, name: house.houseType.name },
-        division: { id: house.division.id, name: house.division.name },
-        subdivision: { id: house.subdivision.id, name: house.subdivision.name },
-        neighborhood: {
-          id: house.neighborhood.id,
-          name: house.neighborhood.name,
-        },
-        images: house.images.map((img) => ({ ...img, markedForDelete: false })),
-      };
-
-      return processedHouse; // raw enough for form defaultValues
-    } catch (error) {
-      return {
-        error: (error as Error).message,
-      };
+    if (!house || house.agentId !== userId) {
+      throw new Error("Unauthorized");
     }
+
+    const processedHouse = {
+      ...house,
+      agentId: undefined,
+      agent: null,
+      region: { id: house.region.id, name: house.region.name },
+      houseType: { id: house.houseType.id, name: house.houseType.name },
+      division: { id: house.division.id, name: house.division.name },
+      subdivision: { id: house.subdivision.id, name: house.subdivision.name },
+      neighborhood: {
+        id: house.neighborhood.id,
+        name: house.neighborhood.name,
+      },
+      images: house.images.map((img) => ({ ...img, markedForDelete: false })),
+    };
+
+    return processedHouse; // raw enough for form defaultValues
   },
 
   async updateHouse(
     houseId: string,
-    user: { id: string; role: string },
+    user: { id: string; roles: string[] },
     data: any
   ) {
-    console.log(data.imagesToDelete);
-
     data.imagesToDelete.map(async (img: string) => {
       const result = deleteFromCloudinary(img);
       console.log(result);
     });
 
-    const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
+    const allowedRoles: string[] = ["admin", "agent"];
 
-    if (!allowedRoles.includes(user.role)) {
+    const authorized = user.roles.some((role) => allowedRoles.includes(role));
+
+    if (!authorized) {
       throw new Error("Forbidden: Your account type cannot create listings.");
     }
 
@@ -152,32 +148,25 @@ export const HouseService = {
     return updated[0];
   },
 
-  async deleteHouse(houseId: string, user: { id: string; role: string }) {
-    try {
-      const allowedRoles: string[] = ["admin", "agent", "partner", "provider"];
+  async deleteHouse(houseId: string, user: { id: string; roles: string[] }) {
+    const allowedRoles: string[] = ["admin", "agent"];
 
-      if (!allowedRoles.includes(user.role)) {
-        throw new Error("Forbidden: Your account type cannot create listings.");
-      }
-      console.log(user);
-      console.log(houseId);
-      const house = await HouseRepository.findByIdWithImages(houseId);
+    const authorized = user.roles.some((role) => allowedRoles.includes(role));
 
-      if (!house) {
-        throw new Error("Error: House not found");
-      }
-
-      HouseRepository.delete(houseId, user.id);
-
-      house.images.map(async (img) => {
-        const result = deleteFromCloudinary(img.publicId);
-        console.log(result);
-      });
-    } catch (error) {
-      console.log(`Error: ${error}`);
-      const err = error as Error;
-
-      throw new Error(err.message);
+    if (!authorized) {
+      throw new Error("Forbidden: Your account type cannot create listings.");
     }
+    const house = await HouseRepository.findByIdWithImages(houseId);
+
+    if (!house) {
+      throw new Error("Error: House not found");
+    }
+
+    HouseRepository.delete(houseId, user.id);
+
+    house.images.map(async (img) => {
+      const result = deleteFromCloudinary(img.publicId);
+      console.log(result);
+    });
   },
 };

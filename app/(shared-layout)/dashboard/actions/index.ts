@@ -64,7 +64,7 @@ export async function getAgentTokens() {
 
   const tokens = await InviteTokenService.getAgentTokens({
     id: session.user.id,
-    role: session.user.role,
+    roles: session.user.roles,
   });
 
   return tokens;

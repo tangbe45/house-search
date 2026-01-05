@@ -1,5 +1,6 @@
 import {
   createInviteTokenSchema,
+  createProfileSchema,
   houseCreateSchema,
   houseFilterSchema,
   houseUpdateSchema,
@@ -52,3 +53,5 @@ export type LocationData = {
 export type InviteToken = z.infer<typeof selectInviteSchema>;
 export type CreateInvitToken = z.infer<typeof createInviteTokenSchema>;
 export type UpdateInviteToken = z.infer<typeof updateInviteTokenSchema>;
+
+export type CreateProfile = z.infer<typeof createProfileSchema>;

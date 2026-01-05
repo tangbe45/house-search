@@ -1,6 +1,9 @@
 import AgentDashboard from "@/components/dashboards/agent-dashboard";
 import { getAgentHouses, getAgentTokens } from "./actions";
 import { headers } from "next/headers";
+import UserDashboard from "@/components/dashboards/user-dashboard";
+import { auth } from "@/lib/auth";
+import { StaticImageData } from "next/image";
 
 // async function getAgentTokens() {
 //   const authHeaders = new Headers(await headers());
@@ -19,12 +22,16 @@ import { headers } from "next/headers";
 // }
 
 const DashboarPage = async () => {
-  const houses = await getAgentHouses();
+  const session = await auth.api.getSession({ headers: await headers() });
+  console.log(session?.user.roles);
 
-  const tokens = await getAgentTokens();
-  console.log(tokens);
-
-  return <AgentDashboard houses={houses} tokens={tokens} />;
+  if (session?.user.roles.includes("admin")) {
+    return <AgentDashboard />;
+  } else if (session?.user.roles.includes("agent")) {
+    return <AgentDashboard />;
+  } else if (session?.user.roles.includes("basic")) {
+    return <UserDashboard />;
+  }
 };
 
 export default DashboarPage;

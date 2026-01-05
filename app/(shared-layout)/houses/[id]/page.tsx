@@ -1,6 +1,6 @@
 import { AgentCard } from "@/components/web/AgentCard";
 import { HouseGallery } from "@/components/web/HouseGallery";
-import { getHouseById } from "../actions";
+import { getAgentById, getHouseById } from "../actions";
 import url from "../../../../public/avatar/avatar.jpg";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -14,6 +14,7 @@ export default async function HouseDetailsPage({ params }: HousePageProps) {
   // Replace with real DB call
   const { id } = await params;
   const houseData: any = await getHouseById(id);
+  console.log(houseData);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -67,15 +68,7 @@ export default async function HouseDetailsPage({ params }: HousePageProps) {
           </div>
 
           {/* Agent Card */}
-          <AgentCard
-            agent={{
-              name: "Jean Dupont",
-              email: "jean@example.com",
-              phone: "+237670000000",
-              whatsapp: "+237670000000",
-              avatar: url,
-            }}
-          />
+          <AgentCard agent={houseData.agent} />
         </div>
         <Link href="/houses" className={`${buttonVariants()} `}>
           &larr; Back to Houses

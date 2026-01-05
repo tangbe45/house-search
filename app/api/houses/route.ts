@@ -46,7 +46,6 @@ export async function GET(req: Request) {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   try {
-    console.log(body);
     // 0. Authenticate user
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) {
@@ -66,7 +65,7 @@ export async function POST(req: NextRequest) {
       throw new Error(parsed.error.message);
     }
 
-    const user = { id: session.user.id, role: session.user.role };
+    const user = { id: session.user.id, roles: session.user.roles };
 
     await HouseService.createHouse(user, parsed.data);
 
